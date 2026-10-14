@@ -1,0 +1,9 @@
+{
+  "name": "go-language-workshop",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/editor.test.mjs",
+    "check": "node --check web/app.js && node --check web/editor.js"
+  }
+}

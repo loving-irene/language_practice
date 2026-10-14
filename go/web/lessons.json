@@ -1,0 +1,198 @@
+[
+  {
+    "id": "hello", "title": "第一个 Go 程序", "english": "Hello, Gopher", "group": "语言基础", "minutes": 8,
+    "summary": "从一个可运行的程序出发，理解 Go 的程序结构，以及从源码到结果的完整路径。",
+    "tags": ["package", "import", "main"],
+    "sections": [
+      {"title": "每个程序，都有一个入口", "text": "Go 使用包组织代码。可执行程序的入口位于 main 包中的 main 函数。程序启动后从这里执行，main 返回时，整个进程结束。", "code": "package main\n\nfunc main() {\n    // 程序从这里开始\n}"},
+      {"title": "用标准库完成第一件小事", "text": "import 声明依赖的包，fmt 提供格式化输入输出。Println 输出内容并换行；Printf 按格式字符串输出。Go 会拒绝未使用的导入和函数内变量，帮助你及时清理无效代码。", "code": "fmt.Println(\"Hello, Gopher!\")\nfmt.Printf(\"正在学习 %s\\n\", \"Go\")"}
+    ],
+    "tip": "在终端中，go run main.go 会编译并运行程序；go build 则生成可执行文件。本工作台也会先编译，再执行你的代码。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello, Gopher!\")\n\tfmt.Println(\"从这里，开始你的 Go 之旅。\")\n}\n",
+    "expected": "Hello, Gopher!\n从这里，开始你的 Go 之旅。",
+    "challenge": {"description": "让程序依次输出两行：Hello, Go! 和 Let's build something.，注意大小写和标点。", "hint": "使用两次 fmt.Println，或者在字符串中用 \\n 换行。", "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello, Gopher!\")\n}\n", "expected": "Hello, Go!\nLet's build something.", "solution": "package main\nimport \"fmt\"\nfunc main() {\nfmt.Println(\"Hello, Go!\")\nfmt.Println(\"Let's build something.\")\n}\n"}
+  },
+  {
+    "id": "variables", "title": "变量、常量与类型", "english": "Make it explicit", "group": "语言基础", "minutes": 10,
+    "summary": "建立静态类型思维，理解声明、零值和显式转换，让数据的含义更清楚。",
+    "tags": ["var", "const", "zero value"],
+    "sections": [
+      {"title": "声明表达意图", "text": "var 可以显式声明类型；函数内的 := 会根据右侧推断类型。const 用于编译期常量。未初始化的变量拥有零值：数值是 0，布尔是 false，字符串是空字符串。", "code": "var retries int\nname := \"api-server\"\nconst maxRetries = 3"},
+      {"title": "类型转换必须显式", "text": "不同数值类型之间不会自动转换。整数相除仍得到整数，因此计算比例时应先转成 float64。string 是不可变的字节序列，len 返回字节长度，中文字符数量可用 []rune 转换后计算。", "code": "ratio := float64(3) / float64(4)\nfmt.Println(len([]rune(\"你好\")))"}
+    ],
+    "tip": ":= 只能在函数内使用，同一作用域的左侧至少需要一个新变量。把 int 转成 string 得到的是 Unicode 字符，十进制文本请用 strconv.Itoa。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tvar retries int\n\tservice := \"api-server\"\n\tconst limit = 3\n\tfmt.Printf(\"%s: %d/%d\\n\", service, retries, limit)\n\tfmt.Printf(\"success rate: %.0f%%\\n\", float64(3)/4*100)\n}\n",
+    "expected": "api-server: 0/3\nsuccess rate: 75%",
+    "challenge": {"description": "将 completed / total 正确转换为百分比，输出 progress: 75%。不要直接把答案写进字符串。", "hint": "先把 completed 转为 float64，再做除法。格式串中的 %% 表示百分号。", "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tcompleted, total := 3, 4\n\tprogress := float64(completed / total) * 100\n\tfmt.Printf(\"progress: %.0f%%\\n\", progress)\n}\n", "expected": "progress: 75%", "solution": "package main\nimport \"fmt\"\nfunc main() {\ncompleted, total := 3, 4\nprogress := float64(completed) / float64(total) * 100\nfmt.Printf(\"progress: %.0f%%\\n\", progress)\n}\n"}
+  },
+  {
+    "id": "control", "title": "条件、循环与分支", "english": "Control the flow", "group": "语言基础", "minutes": 10,
+    "summary": "用少量控制结构表达业务规则，练习边界判断与提前返回。",
+    "tags": ["if", "for", "switch"],
+    "sections": [
+      {"title": "只有一种循环关键字", "text": "Go 使用 for 表达计数循环、条件循环和无限循环。range 可以遍历切片、映射和字符串。忽略不需要的索引时使用空白标识符 _。", "code": "for index := 0; index < 3; index++ {\n    fmt.Println(index)\n}"},
+      {"title": "让分支保持直接", "text": "if 可以带初始化语句，变量只在这个分支及其 else 中可见。switch 默认不会进入下一个 case，不需要写 break；不带条件的 switch 适合按区间判断。", "code": "switch {\ncase status >= 500:\n    return \"server error\"\ncase status >= 400:\n    return \"client error\"\ndefault:\n    return \"ok\"\n}"}
+    ],
+    "tip": "先处理异常分支并提前返回，可以减少嵌套层数。range map 的遍历顺序不固定，测试中不要依赖这个顺序。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfor _, status := range []int{200, 404, 503} {\n\t\tswitch {\n\t\tcase status >= 500:\n\t\t\tfmt.Println(status, \"retry\")\n\t\tcase status >= 400:\n\t\t\tfmt.Println(status, \"reject\")\n\t\tdefault:\n\t\t\tfmt.Println(status, \"ok\")\n\t\t}\n\t}\n}\n",
+    "expected": "200 ok\n404 reject\n503 retry",
+    "challenge": {"description": "使用 for 循环计算 1 到 10（含边界）的偶数之和，输出 30。", "hint": "number % 2 == 0 表示偶数，循环上限应包含 10。", "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\ttotal := 0\n\tfmt.Println(total)\n}\n", "expected": "30", "solution": "package main\nimport \"fmt\"\nfunc main() {\ntotal := 0\nfor number := 1; number <= 10; number++ {\nif number%2 == 0 { total += number }\n}\nfmt.Println(total)\n}\n"}
+  },
+  {
+    "id": "functions", "title": "函数、指针与 defer", "english": "Small functions, clear contracts", "group": "语言基础", "minutes": 12,
+    "summary": "理解值传递、多返回值和延迟执行，为清晰的函数契约打下基础。",
+    "tags": ["func", "pointer", "defer"],
+    "sections": [
+      {"title": "参数始终按值传递", "text": "函数接收参数的副本。传入指针时，复制的是地址，函数可以通过这个地址修改原对象。& 取地址，* 解引用；使用指针前应明确它是否允许为 nil。", "code": "func increment(value *int) {\n    *value = *value + 1\n}"},
+      {"title": "在获取资源处安排释放", "text": "defer 在当前函数返回前执行，多个 defer 按后进先出顺序运行。它的参数在声明 defer 时就会求值。常用来关闭文件、释放锁和取消 context。", "code": "defer fmt.Println(\"first\")\ndefer fmt.Println(\"second\")\n// 返回时先输出 second，再输出 first"}
+    ],
+    "tip": "defer 的作用域是函数，不是循环体。循环中打开大量文件时，最好用一个小函数管理每次迭代的资源。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport \"fmt\"\n\nfunc increment(value *int) {\n\t*value = *value + 1\n}\n\nfunc main() {\n\tdefer fmt.Println(\"cleanup\")\n\tcount := 1\n\tincrement(&count)\n\tfmt.Println(\"count:\", count)\n}\n",
+    "expected": "count: 2\ncleanup",
+    "challenge": {"description": "补全 swap，通过指针交换两个整数。程序应输出 20 10。", "hint": "可以用多重赋值同时交换 *left 和 *right。", "code": "package main\n\nimport \"fmt\"\n\nfunc swap(left, right *int) {\n}\n\nfunc main() {\n\tleft, right := 10, 20\n\tswap(&left, &right)\n\tfmt.Println(left, right)\n}\n", "expected": "20 10", "solution": "package main\nimport \"fmt\"\nfunc swap(left, right *int) { *left, *right = *right, *left }\nfunc main() {\nleft, right := 10, 20\nswap(&left, &right)\nfmt.Println(left, right)\n}\n"}
+  },
+  {
+    "id": "collections", "title": "切片与映射", "english": "Work with collections", "group": "语言基础", "minutes": 15,
+    "summary": "理解切片共享底层数组的行为，用 map 建模查找和统计。",
+    "tags": ["slice", "map", "append"],
+    "sections": [
+      {"title": "切片是一个视图", "text": "切片包含指向底层数组的指针、长度与容量。子切片通常共享底层数组；如果要独立修改，请使用 make 加 copy。append 可能分配新数组，因此必须接住它的返回值。", "code": "original := []int{1, 2, 3}\ncloned := make([]int, len(original))\ncopy(cloned, original)\ncloned = append(cloned, 4)"},
+      {"title": "区分不存在和零值", "text": "读取不存在的 map 键会返回值类型的零值。使用 value, ok := lookup[key] 区分键不存在和值本身就是零。nil map 可以读取，但写入前必须用 make 或字面量初始化。", "code": "counts := make(map[string]int)\ncounts[\"go\"]++\nvalue, exists := counts[\"rust\"]"}
+    ],
+    "tip": "map 不支持无保护的并发读写。需要并发访问时，用 sync.Mutex 保护共享状态，或设计为由单个 goroutine 持有它。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tcounts := make(map[string]int)\n\tfor _, language := range []string{\"go\", \"rust\", \"go\"} {\n\t\tcounts[language]++\n\t}\n\tfmt.Println(\"go:\", counts[\"go\"])\n\t_, exists := counts[\"python\"]\n\tfmt.Println(\"python exists:\", exists)\n}\n",
+    "expected": "go: 2\npython exists: false",
+    "challenge": {"description": "补全 unique，按首次出现顺序去重，输出 [go rust python]。", "hint": "用 map[string]bool 记录已见元素，用切片保留顺序。", "code": "package main\n\nimport \"fmt\"\n\nfunc unique(items []string) []string {\n\treturn items\n}\n\nfunc main() {\n\tfmt.Println(unique([]string{\"go\", \"rust\", \"go\", \"python\"}))\n}\n", "expected": "[go rust python]", "solution": "package main\nimport \"fmt\"\nfunc unique(items []string) []string {\nseen := make(map[string]bool)\nresult := []string{}\nfor _, item := range items {\nif !seen[item] { seen[item] = true; result = append(result, item) }\n}\nreturn result\n}\nfunc main() { fmt.Println(unique([]string{\"go\", \"rust\", \"go\", \"python\"})) }\n"}
+  },
+  {
+    "id": "structs", "title": "结构体与方法", "english": "Model your domain", "group": "抽象与设计", "minutes": 12,
+    "summary": "将相关数据与行为组织在一起，理解值接收者、指针接收者和 JSON 标签。",
+    "tags": ["struct", "method", "JSON"],
+    "sections": [
+      {"title": "让业务概念拥有名字", "text": "struct 将多个字段组合为一个类型。首字母大写的字段和方法可以跨包访问。JSON 编解码只处理导出的字段，struct tag 可以控制输出字段名。", "code": "type Service struct {\n    Name string `json:\"name\"`\n    Healthy bool `json:\"healthy\"`\n}"},
+      {"title": "接收者决定修改语义", "text": "值接收者接收结构体副本，适合轻量只读行为。指针接收者允许修改原对象，并避免复制较大的结构体。同一类型的方法通常应保持接收者风格一致。", "code": "func (service *Service) Start() {\n    service.Healthy = true\n}"}
+    ],
+    "tip": "Go 使用组合复用行为，不提供传统类继承。嵌入字段可以提升方法，但不会产生面向对象语言中的动态重写语义。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n)\n\ntype Service struct {\n\tName string `json:\"name\"`\n\tHealthy bool `json:\"healthy\"`\n}\n\nfunc (service *Service) Start() {\n\tservice.Healthy = true\n}\n\nfunc main() {\n\tservice := Service{Name: \"api\"}\n\tservice.Start()\n\tdata, err := json.Marshal(service)\n\tif err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Println(string(data))\n}\n",
+    "expected": "{\"name\":\"api\",\"healthy\":true}",
+    "challenge": {"description": "修复 Counter.Add 的接收者，使它确实修改原来的计数器并输出 3。", "hint": "值接收者修改的是副本，把接收者改成 *Counter。", "code": "package main\n\nimport \"fmt\"\n\ntype Counter struct { Value int }\n\nfunc (counter Counter) Add(amount int) {\n\tcounter.Value += amount\n}\n\nfunc main() {\n\tcounter := Counter{}\n\tcounter.Add(3)\n\tfmt.Println(counter.Value)\n}\n", "expected": "3", "solution": "package main\nimport \"fmt\"\ntype Counter struct { Value int }\nfunc (counter *Counter) Add(amount int) { counter.Value += amount }\nfunc main() { counter := Counter{}; counter.Add(3); fmt.Println(counter.Value) }\n"}
+  },
+  {
+    "id": "interfaces", "title": "接口与组合", "english": "Depend on behavior", "group": "抽象与设计", "minutes": 15,
+    "summary": "用小接口隔离变化，让调用方依赖行为，而不是具体实现。",
+    "tags": ["interface", "io.Writer", "composition"],
+    "sections": [
+      {"title": "隐式实现，小而精确", "text": "类型只要拥有接口要求的方法，就自动实现该接口，无需 implements。接口通常定义在使用它的包中，只包含调用方真正需要的行为。", "code": "type Notifier interface {\n    Notify(message string) string\n}"},
+      {"title": "标准库中的可替换设计", "text": "io.Writer 只要求 Write 方法，因此文件、网络连接和 bytes.Buffer 都可作为输出目标。业务函数接收 io.Writer 后，就可以用内存缓冲区验证结果。", "code": "func report(writer io.Writer) error {\n    _, err := fmt.Fprintln(writer, \"build passed\")\n    return err\n}"}
+    ],
+    "tip": "接口值包含动态类型和动态值。装着一个 nil 指针的接口并不等于 nil；返回 error 时，应直接返回 nil 表示成功。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"io\"\n)\n\nfunc report(writer io.Writer) error {\n\t_, err := fmt.Fprintln(writer, \"build passed\")\n\treturn err\n}\n\nfunc main() {\n\tvar buffer bytes.Buffer\n\tif err := report(&buffer); err != nil {\n\t\tpanic(err)\n\t}\n\tfmt.Print(buffer.String())\n}\n",
+    "expected": "build passed",
+    "challenge": {"description": "让 Email 实现 Notifier，输出 email: deploy ready。只需修改 Notify 的实现。", "hint": "Notify 接收 message，并返回 email: 前缀与消息拼接后的字符串。", "code": "package main\n\nimport \"fmt\"\n\ntype Notifier interface { Notify(string) string }\ntype Email struct{}\n\nfunc (email Email) Notify(message string) string {\n\treturn message\n}\n\nfunc main() {\n\tvar notifier Notifier = Email{}\n\tfmt.Println(notifier.Notify(\"deploy ready\"))\n}\n", "expected": "email: deploy ready", "solution": "package main\nimport \"fmt\"\ntype Notifier interface { Notify(string) string }\ntype Email struct{}\nfunc (email Email) Notify(message string) string { return \"email: \" + message }\nfunc main() { var notifier Notifier = Email{}; fmt.Println(notifier.Notify(\"deploy ready\")) }\n"}
+  }
+  ,{
+    "id": "errors", "title": "错误处理与包装", "english": "Errors are values", "group": "抽象与设计", "minutes": 12,
+    "summary": "显式处理失败路径，保留错误上下文，让上层可以做出正确决策。",
+    "tags": ["error", "errors.Is", "%w"],
+    "sections": [
+      {"title": "失败也是返回值", "text": "Go 通常通过 (value, error) 返回操作结果。调用后立即检查 err，可以让成功路径保持平直。error 是只有 Error() string 方法的接口，自定义类型也可以实现它。", "code": "value, err := strconv.Atoi(input)\nif err != nil {\n    return 0, fmt.Errorf(\"parse count: %w\", err)\n}"},
+      {"title": "包装上下文，保留身份", "text": "fmt.Errorf 的 %w 将底层错误保留在错误链中。errors.Is 判断错误链是否包含目标错误；errors.As 提取某种错误类型。不要依靠字符串比较识别错误。", "code": "if errors.Is(err, ErrNotFound) {\n    // 返回适当的业务结果\n}"}
+    ],
+    "tip": "panic 适合无法继续执行的程序错误，不应作为常规输入校验或业务失败的处理机制。日志和错误应提供上下文，但不要携带密码或令牌。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n)\n\nvar ErrNotFound = errors.New(\"not found\")\n\nfunc loadUser() error {\n\treturn fmt.Errorf(\"load user 42: %w\", ErrNotFound)\n}\n\nfunc main() {\n\terr := loadUser()\n\tfmt.Println(err)\n\tfmt.Println(\"is not found:\", errors.Is(err, ErrNotFound))\n}\n",
+    "expected": "load user 42: not found\nis not found: true",
+    "challenge": {"description": "修复错误包装，使 errors.Is 能识别 ErrTimeout，输出 true。", "hint": "%v 只格式化文本；%w 会保留底层错误。", "code": "package main\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n)\n\nvar ErrTimeout = errors.New(\"timeout\")\n\nfunc main() {\n\terr := fmt.Errorf(\"fetch config: %v\", ErrTimeout)\n\tfmt.Println(errors.Is(err, ErrTimeout))\n}\n", "expected": "true", "solution": "package main\nimport (\"errors\"; \"fmt\")\nvar ErrTimeout = errors.New(\"timeout\")\nfunc main() { err := fmt.Errorf(\"fetch config: %w\", ErrTimeout); fmt.Println(errors.Is(err, ErrTimeout)) }\n"}
+  },
+  {
+    "id": "generics", "title": "泛型与类型约束", "english": "Reuse without losing types", "group": "抽象与设计", "minutes": 15,
+    "summary": "为确实重复的算法引入类型参数，保留静态类型检查与清晰边界。",
+    "tags": ["type parameter", "comparable", "constraint"],
+    "sections": [
+      {"title": "把变化的类型变成参数", "text": "函数可以声明类型参数，例如 First[T any]。调用时编译器通常能推断 T，无需显式写出类型。any 是 interface{} 的别名，它没有提供可用于算术或比较的额外约束。", "code": "func First[Value any](items []Value) (Value, bool) {\n    var zero Value\n    if len(items) == 0 { return zero, false }\n    return items[0], true\n}"},
+      {"title": "约束决定可用操作", "text": "comparable 允许 == 和 !=，也可作为 map 的键约束。联合类型约束可以限定一组类型；~int 还包括底层类型是 int 的自定义类型。", "code": "type Number interface {\n    ~int | ~int64 | ~float64\n}"}
+    ],
+    "tip": "不要为了泛型而泛型。多个类型共享同一算法时用类型参数；多个实现共享行为时，小接口通常更直接。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport \"fmt\"\n\nfunc Contains[Value comparable](items []Value, target Value) bool {\n\tfor _, item := range items {\n\t\tif item == target {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\n\nfunc main() {\n\tfmt.Println(Contains([]int{1, 2, 3}, 2))\n\tfmt.Println(Contains([]string{\"go\", \"rust\"}, \"java\"))\n}\n",
+    "expected": "true\nfalse",
+    "challenge": {"description": "实现泛型 Sum，支持 int 和 float64 切片，依次输出 6 与 4。", "hint": "声明 var total Number，遍历 items 并累加。", "code": "package main\n\nimport \"fmt\"\n\nfunc Sum[Number ~int | ~float64](items []Number) Number {\n\tvar total Number\n\treturn total\n}\n\nfunc main() {\n\tfmt.Println(Sum([]int{1, 2, 3}))\n\tfmt.Println(Sum([]float64{1.5, 2.5}))\n}\n", "expected": "6\n4", "solution": "package main\nimport \"fmt\"\nfunc Sum[Number ~int | ~float64](items []Number) Number {\nvar total Number\nfor _, item := range items { total += item }\nreturn total\n}\nfunc main() { fmt.Println(Sum([]int{1, 2, 3})); fmt.Println(Sum([]float64{1.5, 2.5})) }\n"}
+  },
+  {
+    "id": "goroutines", "title": "Goroutine 与同步", "english": "Do more, together", "group": "并发与工程", "minutes": 18,
+    "summary": "启动并发任务，等待它们完成，并正确保护共享状态。",
+    "tags": ["goroutine", "WaitGroup", "Mutex"],
+    "sections": [
+      {"title": "并发启动不等于等待完成", "text": "go 关键字在新的 goroutine 中执行函数。main 不会自动等待其他 goroutine；用 WaitGroup 追踪任务，在启动前 Add，在任务中 defer Done，最后 Wait。", "code": "group.Add(1)\ngo func() {\n    defer group.Done()\n    work()\n}()\ngroup.Wait()"},
+      {"title": "同步访问共享状态", "text": "多个 goroutine 同时读写一个变量会引入数据竞争。Mutex 把临界区串行化；计数等简单操作也可使用 sync/atomic。time.Sleep 不是可靠的同步机制。", "code": "mutex.Lock()\ncount++\nmutex.Unlock()"}
+    ],
+    "tip": "在自己的完整项目中运行 go test -race ./... 检查数据竞争。本工作台为便携执行关闭 CGO，不提供 race 模式。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport (\n\t\"fmt\"\n\t\"sync\"\n)\n\nfunc main() {\n\tvar group sync.WaitGroup\n\tvar mutex sync.Mutex\n\tcount := 0\n\tfor worker := 0; worker < 3; worker++ {\n\t\tgroup.Add(1)\n\t\tgo func() {\n\t\t\tdefer group.Done()\n\t\t\tmutex.Lock()\n\t\t\tcount++\n\t\t\tmutex.Unlock()\n\t\t}()\n\t}\n\tgroup.Wait()\n\tfmt.Println(\"completed:\", count)\n}\n",
+    "expected": "completed: 3",
+    "challenge": {"description": "启动 5 个 goroutine，每个用原子操作将 count 加 1，等待全部完成后输出 5。", "hint": "在 group.Add(1) 之后启动 goroutine，其中 defer group.Done() 并调用 count.Add(1)。", "code": "package main\n\nimport (\n\t\"fmt\"\n\t\"sync\"\n\t\"sync/atomic\"\n)\n\nfunc main() {\n\tvar group sync.WaitGroup\n\tvar count atomic.Int64\n\tgroup.Wait()\n\tfmt.Println(count.Load())\n}\n", "expected": "5", "solution": "package main\nimport (\"fmt\"; \"sync\"; \"sync/atomic\")\nfunc main() {\nvar group sync.WaitGroup\nvar count atomic.Int64\nfor worker := 0; worker < 5; worker++ {\ngroup.Add(1)\ngo func() { defer group.Done(); count.Add(1) }()\n}\ngroup.Wait()\nfmt.Println(count.Load())\n}\n"}
+  },
+  {
+    "id": "channels", "title": "Channel 与 select", "english": "Communicate by design", "group": "并发与工程", "minutes": 18,
+    "summary": "用通道传递数据和完成信号，理解阻塞、关闭以及多路等待。",
+    "tags": ["chan", "range", "select"],
+    "sections": [
+      {"title": "发送和接收形成同步点", "text": "无缓冲 channel 的发送需要接收方就绪；有缓冲 channel 在缓冲区满之前可以继续发送。使用 chan<- 和 <-chan 可以限制参数的方向，明确所有权。", "code": "values := make(chan int)\ngo func() { values <- 42 }()\nfmt.Println(<-values)"},
+      {"title": "关闭意味着不会再有数据", "text": "通常由发送方负责关闭 channel。range 会持续接收直到通道关闭且数据耗尽。select 可以同时等待多个通道；有多个分支就绪时选择顺序不确定。", "code": "select {\ncase value := <-results:\n    fmt.Println(value)\ncase <-ctx.Done():\n    return\n}"}
+    ],
+    "tip": "向已关闭的 channel 发送会 panic，nil channel 的发送和接收会永久阻塞。无条件 default 可能产生忙循环，应仔细确认需求。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tresults := make(chan int)\n\tgo func() {\n\t\tdefer close(results)\n\t\tfor number := 1; number <= 3; number++ {\n\t\t\tresults <- number * number\n\t\t}\n\t}()\n\tfor result := range results {\n\t\tfmt.Println(result)\n\t}\n}\n",
+    "expected": "1\n4\n9",
+    "challenge": {"description": "消费 values 通道中的所有数据并求和，输出 6。", "hint": "使用 for value := range values 读取直到通道关闭。", "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tvalues := make(chan int, 3)\n\tvalues <- 1\n\tvalues <- 2\n\tvalues <- 3\n\tclose(values)\n\ttotal := 0\n\tfmt.Println(total)\n}\n", "expected": "6", "solution": "package main\nimport \"fmt\"\nfunc main() {\nvalues := make(chan int, 3)\nvalues <- 1; values <- 2; values <- 3\nclose(values)\ntotal := 0\nfor value := range values { total += value }\nfmt.Println(total)\n}\n"}
+  },
+  {
+    "id": "context", "title": "Context 与取消", "english": "Give work a lifetime", "group": "并发与工程", "minutes": 15,
+    "summary": "为请求和后台任务明确生命周期，让超时和取消沿调用链传播。",
+    "tags": ["context", "deadline", "cancel"],
+    "sections": [
+      {"title": "取消是一种协作协议", "text": "context 不会强制杀死 goroutine。任务必须通过 Done 通道或 Err 检查取消状态并主动返回。通常将 ctx 作为函数的第一个参数向下传递。", "code": "func work(ctx context.Context) error {\n    select {\n    case <-ctx.Done():\n        return ctx.Err()\n    case <-time.After(time.Second):\n        return nil\n    }\n}"},
+      {"title": "创建后安排取消", "text": "WithCancel、WithTimeout 和 WithDeadline 都会返回取消函数。使用 defer cancel() 及时释放相关资源，即使任务先于超时完成也应该取消。", "code": "ctx, cancel := context.WithTimeout(context.Background(), time.Second)\ndefer cancel()"}
+    ],
+    "tip": "不要把 context 当作可选参数容器。Value 适合请求范围的元数据；业务必需的数据应使用明确的函数参数。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"time\"\n)\n\nfunc main() {\n\tctx, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)\n\tdefer cancel()\n\t<-ctx.Done()\n\tfmt.Println(ctx.Err())\n}\n",
+    "expected": "context deadline exceeded",
+    "challenge": {"description": "主动取消 ctx，然后输出它的错误，预期为 context canceled。", "hint": "调用 cancel() 后再输出 ctx.Err()。保留 defer cancel() 也没有问题。", "code": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n)\n\nfunc main() {\n\tctx, cancel := context.WithCancel(context.Background())\n\tdefer cancel()\n\tfmt.Println(ctx.Err())\n}\n", "expected": "context canceled", "solution": "package main\nimport (\"context\"; \"fmt\")\nfunc main() { ctx, cancel := context.WithCancel(context.Background()); defer cancel(); cancel(); fmt.Println(ctx.Err()) }\n"}
+  },
+  {
+    "id": "testing", "title": "测试与表驱动测试", "english": "Make behavior verifiable", "group": "并发与工程", "minutes": 18,
+    "summary": "把行为和边界写成可执行的约定，用一组数据覆盖多个场景。",
+    "tags": ["testing", "table-driven", "t.Run"],
+    "sections": [
+      {"title": "测试是普通的 Go 代码", "text": "测试放在 _test.go 文件中，函数形如 func TestName(t *testing.T)。使用 go test 运行，-v 显示详细结果。工作台会在选择测试模式时编译并执行真实的测试二进制。", "code": "func TestAdd(t *testing.T) {\n    if got := Add(2, 3); got != 5 {\n        t.Fatalf(\"got %d, want 5\", got)\n    }\n}"},
+      {"title": "用数据表达场景差异", "text": "表驱动测试把输入和预期放进切片，在循环中使用 t.Run 运行具名子测试。优先覆盖业务边界，如零值、空输入、负数和上限，而非重复实现代码。", "code": "for _, testCase := range cases {\n    t.Run(testCase.name, func(t *testing.T) {\n        // 执行并校验一个场景\n    })\n}"}
+    ],
+    "tip": "练习的起始代码会让测试失败。根据测试输出修复 Clamp 的业务逻辑，保持测试断言不变。",
+    "mode": "test", "input": "",
+    "example": "package main\n\nimport \"testing\"\n\nfunc Add(left, right int) int { return left + right }\n\nfunc TestAdd(t *testing.T) {\n\tcases := []struct { name string; left, right, want int }{\n\t\t{\"positive\", 2, 3, 5},\n\t\t{\"negative\", -2, -3, -5},\n\t\t{\"zero\", 0, 0, 0},\n\t}\n\tfor _, testCase := range cases {\n\t\tt.Run(testCase.name, func(t *testing.T) {\n\t\t\tif got := Add(testCase.left, testCase.right); got != testCase.want {\n\t\t\t\tt.Fatalf(\"got %d, want %d\", got, testCase.want)\n\t\t\t}\n\t\t})\n\t}\n}\n",
+    "expected": "PASS", "match": "test",
+    "challenge": {"description": "实现 Clamp，把整数限制在 0 到 100 之间。三个子测试都应通过。", "hint": "小于 0 返回 0，大于 100 返回 100，其余原样返回。", "code": "package main\n\nimport \"testing\"\n\nfunc Clamp(value int) int {\n\treturn value\n}\n\nfunc TestClamp(t *testing.T) {\n\tcases := []struct { name string; input, want int }{\n\t\t{\"below\", -5, 0},\n\t\t{\"inside\", 42, 42},\n\t\t{\"above\", 120, 100},\n\t}\n\tfor _, testCase := range cases {\n\t\tt.Run(testCase.name, func(t *testing.T) {\n\t\t\tif got := Clamp(testCase.input); got != testCase.want {\n\t\t\t\tt.Fatalf(\"got %d, want %d\", got, testCase.want)\n\t\t\t}\n\t\t})\n\t}\n}\n", "expected": "PASS", "solution": "package main\nimport \"testing\"\nfunc Clamp(value int) int { if value < 0 { return 0 }; if value > 100 { return 100 }; return value }\nfunc TestClamp(t *testing.T) {\ncases := []struct { input, want int }{{-5, 0}, {42, 42}, {120, 100}}\nfor _, testCase := range cases { if got := Clamp(testCase.input); got != testCase.want { t.Fatalf(\"got %d, want %d\", got, testCase.want) } }\n}\n"}
+  },
+  {
+    "id": "http", "title": "HTTP 服务与请求测试", "english": "Bring it to the web", "group": "并发与工程", "minutes": 18,
+    "summary": "实现一个 HTTP Handler，并在不启动网络端口的情况下验证响应。",
+    "tags": ["net/http", "httptest", "handler"],
+    "sections": [
+      {"title": "请求进入，响应写出", "text": "HTTP Handler 接收 ResponseWriter 和 Request。应先设置响应头和状态码，再写入响应体。Go 1.22 的 ServeMux 支持方法加路径的路由形式，例如 GET /health。", "code": "mux := http.NewServeMux()\nmux.HandleFunc(\"GET /health\", health)"},
+      {"title": "测试行为，无需端口", "text": "httptest.NewRequest 创建服务端测试请求，NewRecorder 记录响应。直接调用 ServeHTTP 就能验证状态码、头部和响应体，让测试稳定且独立于网络。", "code": "request := httptest.NewRequest(http.MethodGet, \"/health\", nil)\nresponse := httptest.NewRecorder()\nmux.ServeHTTP(response, request)"}
+    ],
+    "tip": "真正部署 HTTP 服务时，还需配置读取超时、认证、日志与优雅退出。这里的例子聚焦 Handler 行为，不启动长期运行的服务。",
+    "mode": "run", "input": "",
+    "example": "package main\n\nimport (\n\t\"fmt\"\n\t\"net/http\"\n\t\"net/http/httptest\"\n)\n\nfunc main() {\n\tmux := http.NewServeMux()\n\tmux.HandleFunc(\"GET /health\", func(response http.ResponseWriter, request *http.Request) {\n\t\tresponse.Header().Set(\"Content-Type\", \"application/json\")\n\t\tfmt.Fprint(response, `{\"status\":\"ok\"}`)\n\t})\n\trequest := httptest.NewRequest(http.MethodGet, \"/health\", nil)\n\tresponse := httptest.NewRecorder()\n\tmux.ServeHTTP(response, request)\n\tfmt.Println(response.Code)\n\tfmt.Println(response.Body.String())\n}\n",
+    "expected": "200\n{\"status\":\"ok\"}",
+    "challenge": {"description": "让创建接口返回 201 状态码和 created 响应体。先写状态码，再写响应体。", "hint": "在 fmt.Fprint 之前调用 response.WriteHeader(http.StatusCreated)。", "code": "package main\n\nimport (\n\t\"fmt\"\n\t\"net/http\"\n\t\"net/http/httptest\"\n)\n\nfunc create(response http.ResponseWriter, request *http.Request) {\n\tfmt.Fprint(response, \"created\")\n}\n\nfunc main() {\n\tresponse := httptest.NewRecorder()\n\tcreate(response, httptest.NewRequest(http.MethodPost, \"/items\", nil))\n\tfmt.Println(response.Code)\n\tfmt.Println(response.Body.String())\n}\n", "expected": "201\ncreated", "solution": "package main\nimport (\"fmt\"; \"net/http\"; \"net/http/httptest\")\nfunc create(response http.ResponseWriter, request *http.Request) { response.WriteHeader(http.StatusCreated); fmt.Fprint(response, \"created\") }\nfunc main() { response := httptest.NewRecorder(); create(response, httptest.NewRequest(http.MethodPost, \"/items\", nil)); fmt.Println(response.Code); fmt.Println(response.Body.String()) }\n"}
+  }
+]

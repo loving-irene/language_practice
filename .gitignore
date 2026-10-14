@@ -1,0 +1,5 @@
+go/workshop
+go/workshop.exe
+go/*.test
+go/*.test.exe
+.artifacts/
