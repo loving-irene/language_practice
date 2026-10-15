@@ -14,7 +14,7 @@
   <a class="skip-link" href="#main-content">跳到学习内容</a>
   <aside class="sidebar" id="sidebar" aria-label="课程导航">
     <a class="brand" href="/" aria-label="码间首页"><span class="brand-mark">m<span>_</span></span><span>码间<small>LANGUAGE PRACTICE</small></span></a>
-    <div class="language-card"><span class="go-mark">Go</span><div><strong>Go 语言工作台</strong><span>简单，是一种工程能力</span></div><span class="language-dot"></span></div>
+    <div class="language-card"><div class="language-card-main"><span class="go-mark" id="language-symbol">Go</span><div><strong id="language-title">Go 语言工作台</strong><span id="language-english">简单，是一种工程能力</span></div></div><div class="language-card-tools"><label for="language-select">语言<select id="language-select" aria-label="选择编程语言"></select></label><button id="environment-button" class="environment-link">环境检测 ↗</button></div></div>
     <nav class="view-nav" aria-label="学习模式">
       <button class="nav-button active" data-view="learn" aria-pressed="true"><span class="nav-icon">▤</span>概念学习<span class="nav-arrow">↗</span></button>
       <button class="nav-button" data-view="lab" aria-pressed="false"><span class="nav-icon terminal-icon">&gt;_</span>代码实验室<span class="nav-arrow">↗</span></button>
@@ -28,13 +28,13 @@
   <div class="app-shell">
     <header class="topbar">
       <button class="icon-button mobile-menu" id="menu-button" aria-label="打开课程导航" aria-expanded="false" aria-controls="sidebar">☰</button>
-      <div class="breadcrumbs"><span>语言工作台</span><span class="slash">/</span><strong>Go</strong><span class="slash">/</span><span id="breadcrumb-group">语言基础</span></div>
+      <div class="breadcrumbs"><span>语言工作台</span><span class="slash">/</span><strong id="breadcrumb-language">Go</strong><span class="slash">/</span><span id="breadcrumb-group">语言基础</span></div>
       <div class="topbar-actions"><button id="connection" class="connection" title="点击重新检测本地服务"><span class="status-dot"></span><span id="connection-label">连接本地环境…</span></button><button id="help-button" class="icon-button help-button" aria-label="使用说明与快捷键">?</button></div>
     </header>
     <main id="main-content" tabindex="-1">
       <div id="load-error" class="error-banner" role="alert" hidden></div>
       <section class="hero" aria-labelledby="page-title">
-        <div class="hero-copy"><div class="eyebrow"><span class="tiny-line"></span> BUILD YOUR ENGINEERING INSTINCT</div><h1 id="page-title">读懂 Go，然后<span>动手写。</span></h1><p>把概念变成直觉，把想法变成运行中的代码。</p><div class="hero-meta"><span><strong>14</strong> 个核心主题</span><span><strong>3</strong> 段进阶路径</span><span>每一课，都能动手</span></div></div>
+        <div class="hero-copy"><div class="eyebrow"><span class="tiny-line"></span> BUILD YOUR ENGINEERING INSTINCT</div><h1 id="page-title">读懂 <span id="hero-language">Go</span>，然后<span>动手写。</span></h1><p>把概念变成直觉，把想法变成运行中的代码。</p><div class="hero-meta"><span><strong id="hero-lesson-count">14</strong> 个核心主题</span><span><strong>4</strong> 种语言路径</span><span>每一课，都能动手</span></div></div>
         <div class="hero-art" aria-hidden="true"><span class="art-label">LESS READING. MORE BUILDING.</span><span class="art-go">Go<span class="art-period">.</span></span><div class="art-bottom"><span>COMPILE → RUN → REPEAT</span><span>↗</span></div></div>
       </section>
       <div class="workspace-tabs"><div class="mode-switch"><button data-view="learn" class="active" aria-pressed="true">概念学习<span>LEARN</span></button><button data-view="lab" aria-pressed="false">代码实验室<span>BUILD</span></button></div><div class="course-progress"><span id="progress-text">学习进度 <strong>0 / 14</strong></span><progress id="progress-bar" value="0" max="14" aria-label="已掌握课程数"></progress></div></div>
@@ -47,10 +47,10 @@
           <div class="lesson-actions"><button id="complete-button" class="button button-outline"><span>✓</span> 标记为已掌握</button><button id="next-button" class="text-button">下一课 <span>→</span></button></div>
         </article>
         <section class="practice-panel" id="practice-panel" aria-labelledby="practice-title">
-          <div class="practice-heading"><div><div class="eyebrow">A LITTLE LESS THEORY</div><h2 id="practice-title">边学，边运行<span class="small-dot">.</span></h2></div><span class="local-badge"><span class="status-dot"></span>本地执行</span></div>
+          <div class="practice-heading"><div><div class="eyebrow">A LITTLE LESS THEORY</div><h2 id="practice-title">边学，边运行<span class="small-dot">.</span></h2></div><span class="local-badge"><span class="status-dot"></span><span id="local-badge-label">本地执行</span></span></div>
           <div class="editor-shell">
             <div class="editor-controls"><div class="exercise-switch" aria-label="代码来源"><button id="example-button" class="active" aria-pressed="true">课程示例</button><button id="challenge-button" aria-pressed="false">动手练习<span class="exercise-dot"></span></button></div><div class="editor-tools"><button id="format-button" class="editor-tool" title="格式化代码（Ctrl+Shift+F）">格式化</button><button id="reset-button" class="editor-tool" title="重置当前代码" aria-label="重置当前代码">↺</button></div></div>
-            <div class="editor-filebar"><span class="file-tab"><span class="file-go">GO</span><span id="filename">main.go</span><span class="file-dot"></span></span><label class="execution-mode">模式<select id="execution-mode" aria-label="代码运行模式"><option value="run">运行程序</option><option value="test">运行测试</option></select></label></div>
+            <div class="editor-filebar"><span class="file-tab"><span class="file-go" id="file-symbol">GO</span><span id="filename">main.go</span><span class="file-dot"></span></span><label class="execution-mode">模式<select id="execution-mode" aria-label="代码运行模式"><option value="run">运行程序</option><option value="test">运行测试</option></select></label></div>
             <div class="code-editor"><div class="line-numbers" aria-hidden="true"><div id="line-numbers">1</div></div><div class="code-stage"><pre class="code-highlight" id="code-highlight" aria-hidden="true"><code id="highlighted-code"></code></pre><textarea id="code-editor" aria-label="Go 代码编辑器" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off"></textarea></div></div>
             <div class="editor-status"><span id="save-status">草稿自动保存在本机</span><span id="cursor-status">Ln 1, Col 1</span><span>UTF-8</span></div>
             <div class="run-bar"><span id="run-shortcut">Ctrl ↵ 运行</span><div><button id="stop-button" class="button button-stop" hidden>停止</button><button id="run-button" class="button button-run" disabled><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 3 11 7-11 7z"/></svg><span>运行代码</span></button></div></div>
@@ -65,7 +65,8 @@
     </main>
   </div>
   <dialog id="confirm-dialog" class="modal"><form method="dialog"><span class="dialog-eyebrow">A FRESH START</span><h2>重新开始这段代码？</h2><p>当前模式的代码和标准输入将恢复为初始内容，其他课程的草稿会保留。</p><div class="dialog-actions"><button class="button button-outline" value="cancel">保留草稿</button><button class="button button-primary" value="reset">重置代码</button></div></form></dialog>
-  <dialog id="help-dialog" class="modal help-modal"><form method="dialog"><span class="dialog-eyebrow">MAKE YOURSELF AT HOME</span><h2>你的 Go 练习小工具</h2><div class="shortcut-row"><span>运行代码</span><kbd>Ctrl / ⌘ + Enter</kbd></div><div class="shortcut-row"><span>格式化代码</span><kbd>Ctrl / ⌘ + Shift + F</kbd></div><div class="shortcut-row"><span>搜索课程</span><kbd>Ctrl / ⌘ + K</kbd></div><div class="shortcut-row"><span>缩进 / 减少缩进</span><kbd>Tab / Shift + Tab</kbd></div><p>在编辑器内先按 Esc，再按 Tab，可将焦点移出编辑器。支持标准输入与单文件测试；草稿、学习进度和最近 8 次运行保存在当前浏览器。</p><p class="local-notice">代码以你的本机账户权限执行，仅运行你信任的代码。仅支持标准库，运行时间默认不超过 5 秒；首次编译可能稍慢。</p><button class="button button-primary" value="close">开始动手</button></form></dialog>
+  <dialog id="help-dialog" class="modal help-modal"><form method="dialog"><span class="dialog-eyebrow">MAKE YOURSELF AT HOME</span><h2>你的语言练习小工具</h2><div class="shortcut-row"><span>运行代码</span><kbd>Ctrl / ⌘ + Enter</kbd></div><div class="shortcut-row"><span>格式化代码</span><kbd>Ctrl / ⌘ + Shift + F</kbd></div><div class="shortcut-row"><span>搜索课程</span><kbd>Ctrl / ⌘ + K</kbd></div><div class="shortcut-row"><span>缩进 / 减少缩进</span><kbd>Tab / Shift + Tab</kbd></div><p>在编辑器内先按 Esc，再按 Tab，可将焦点移出编辑器。支持标准输入；Go 还支持单文件测试。草稿、学习进度和最近 8 次运行保存在当前浏览器。</p><p class="local-notice">代码以你的本机账户权限执行，仅运行你信任的代码。服务启动时会检测当前语言工具链；未安装时，请打开「环境检测」查看 Windows 安装步骤。</p><button class="button button-primary" value="close">开始动手</button></form></dialog>
+  <dialog id="environment-dialog" class="modal environment-modal"><form method="dialog"><span class="dialog-eyebrow">WINDOWS TOOLCHAIN CHECK</span><h2>运行环境检测</h2><p id="environment-summary">正在读取本机工具链…</p><div id="environment-content" class="environment-content"></div><a id="environment-doc-link" class="environment-doc-link" href="/docs/windows-environment.md" target="_blank" rel="noreferrer">查看 Windows 安装与验证文档 ↗</a><button class="button button-primary" value="close">知道了</button></form></dialog>
   <div class="toast" id="toast" role="status" hidden></div>
 </body>
 </html>

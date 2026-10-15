@@ -9,13 +9,15 @@
 | `process_windows.go` / `process_unix.go` | Windows 进程树 / Unix 进程组的取消处理 |
 | `web/index.html` / `web/styles.css` | 响应式中文工作台 |
 | `web/app.js` / `web/editor.js` | 课程导航、草稿、进度、编辑器与 API 交互 |
-| `web/lessons.json` | 14 节课程的讲解、示例、练习、提示、预期输出与参考解法 |
+| `languages.go` | 语言目录、工具链候选、环境检测和报告 |
+| `web/lessons.json` | Go 课程的讲解、示例、练习、提示、预期输出与参考解法 |
+| `web/languages/*.json` | Python、C、C++、Rust 课程数据 |
 | `main_test.go` | 服务、执行器、错误路径以及全部课程代码的验证 |
 | `tests/editor.test.mjs` | 转义、缩进、着色和输出核对测试 |
 
 ## 环境与快速开始
 
-支持 Windows、Linux、macOS。需要 Go 1.22 或更高版本，且 `go` 在启动服务的进程 PATH 中。浏览器需支持 ES modules、dialog、fetch 和 localStorage；推荐近期版本的 Chrome、Edge、Firefox 或 Safari。
+支持 Windows、Linux、macOS。需要 Go 1.22 或更高版本，且 `go` 在启动服务的进程 PATH 中。要运行 Python、C、C++ 或 Rust，需要相应解释器 / 编译器在 PATH 中。Windows 的安装方式见 [windows-environment.md](windows-environment.md)。浏览器需支持 ES modules、dialog、fetch 和 localStorage；推荐近期版本的 Chrome、Edge、Firefox 或 Safari。
 
 在 `language_practice/go` 目录执行：
 
@@ -42,7 +44,7 @@ go build -buildvcs=false -o workshop.exe .
 .\workshop.exe
 ```
 
-构建后的服务仍需要本机 Go 工具链来编译用户练习，不能仅分发可执行文件就省略 Go 安装。
+构建后的服务仍需要本机 Go 工具链来编译 Go 代码，并需要相应语言工具链来运行其他练习；不能仅分发可执行文件就省略这些依赖。
 
 ## 配置
 
@@ -52,7 +54,7 @@ go build -buildvcs=false -o workshop.exe .
 | --- | --- | --- |
 | `-port` | `8787` | 1–65535，仅绑定 `127.0.0.1` |
 | `-timeout` | `5s` | 每次程序执行的时间上限，必须大于零 |
-| `-build-timeout` | `60s` | 单独的编译上限，首次编译标准库可能耗时更长 |
+| `-build-timeout` | `60s` | C/C++/Rust/Go 的编译上限，首次编译标准库可能耗时更长 |
 
 ```sh
 go run -buildvcs=false . -port 8888 -timeout 10s -build-timeout 90s
@@ -60,7 +62,7 @@ go run -buildvcs=false . -port 8888 -timeout 10s -build-timeout 90s
 
 标准库编译缓存由 Go 的正常环境配置管理。执行器仅转发运行和查找工具所需的环境变量（PATH、系统目录、临时目录、用户目录、GOROOT、GOCACHE 和 GOPATH 等），不整份转发服务进程的环境。它明确设置 `GOPROXY=off`、`GOSUMDB=off`、`GOTOOLCHAIN=local`、`GOWORK=off`、`GOENV=off`、`GOFLAGS=`、`CGO_ENABLED=0` 和 `GOMAXPROCS=2`。
 
-只支持当前 Go 安装中的标准库，不下载外部依赖、不支持多文件模块或 CGO。上述环境设置不限制用户程序自己的网络或文件访问。
+Go 练习只支持当前 Go 安装中的标准库，不下载外部依赖、不支持多文件模块或 CGO。Python 练习只运行单文件和标准库；C、C++、Rust 练习分别使用单文件 GCC/Clang/MSVC 或 rustc，C 默认按 C11、C++ 默认按 C++17 编译。上述环境设置不限制用户程序自己的网络或文件访问。
 
 ## 学习与练习
 
@@ -74,7 +76,7 @@ go run -buildvcs=false . -port 8888 -timeout 10s -build-timeout 90s
 
 标准输入在运行前整体送入程序，随后关闭，不是持续交互终端。用 `fmt.Scan`、`fmt.Fscan` 或 `bufio.Scanner` 读取输入。长驻服务、无限等待输入或超过时间限制的程序会被停止。
 
-测试模式把编辑内容写入 `main_test.go`，执行 `go test -c` 生成测试二进制，再执行带 `-test.v` 和 `-test.timeout` 的测试程序。正常模式写入 `main.go` 并用 `go build` 编译。页面中的测试示例可直接运行。
+测试模式只对 Go 开放：它把编辑内容写入 `main_test.go`，执行 `go test -c` 生成测试二进制，再执行带 `-test.v` 和 `-test.timeout` 的测试程序。正常模式按语言写入 `main.go`、`main.py`、`main.c`、`main.cpp` 或 `main.rs`，再调用对应运行时 / 编译器。页面中的 Go 测试示例可直接运行。
 
 ### 快捷键
 
@@ -88,7 +90,7 @@ go run -buildvcs=false . -port 8888 -timeout 10s -build-timeout 90s
 
 ## 数据保存
 
-代码、标准输入、运行模式、当前课程、掌握标记和最近 8 次输出保存在 localStorage 的 `language-practice.go.v1` 项下。示例和练习拥有独立草稿。数据不上传第三方服务，也不存入服务端数据库。
+代码、标准输入、运行模式、当前语言、当前课程、掌握标记和最近 8 次输出保存在 localStorage 的 `language-practice.v2` 项下，并按语言分别保存。旧版 `language-practice.go.v1` 会在首次打开时迁移到 Go 配置。示例和练习拥有独立草稿。数据不上传第三方服务，也不存入服务端数据库。
 
 保存按浏览器来源隔离，`localhost` 与 `127.0.0.1`、不同端口和不同浏览器各有记录。清除浏览器数据会删除记录。浏览器禁止存储或配额不足时，界面会提示保存失败，此时应自行复制代码。重置按钮仅重置当前课程当前模式的代码与标准输入，并要求确认。
 
@@ -103,7 +105,7 @@ go run -buildvcs=false . -port 8888 -timeout 10s -build-timeout 90s
 
 ## HTTP API
 
-所有 API 同源访问。`GET /api/config` 返回当前会话 token、Go 工具链版本、超时与输入限制。Token 只用于本地请求校验，不应写入日志。
+所有 API 同源访问。`GET /api/config` 返回当前会话 token、语言目录、每种语言的工具链检测结果、超时与输入限制。Token 只用于本地请求校验，不应写入日志。
 
 `POST /api/run` 和 `POST /api/format` 使用 `Content-Type: application/json`，并在 `X-Practice-Token` 中传入配置接口返回的 token。
 
@@ -111,13 +113,14 @@ go run -buildvcs=false . -port 8888 -timeout 10s -build-timeout 90s
 
 ```json
 {
+  "language": "go",
   "code": "package main\nfunc main() { println(42) }",
   "input": "",
   "mode": "run"
 }
 ```
 
-`mode` 为 `run` 或 `test`，省略时默认为 `run`。格式化只需 `code` 字段，成功返回 `{"code":"格式化后的源码"}`。
+`language` 为 `go`、`python`、`c`、`cpp` 或 `rust`，省略时默认为 `go`。`mode` 为 `run` 或 `test`，只有 Go 支持 `test`。格式化只需 `language` 和 `code` 字段；Go 使用 gofmt，C/C++ 需要 clang-format，Rust 需要 rustfmt，Python 暂不提供格式化按钮。成功返回 `{"code":"格式化后的源码"}`。
 
 运行响应字段：
 
@@ -131,7 +134,7 @@ go run -buildvcs=false . -port 8888 -timeout 10s -build-timeout 90s
 | `timedOut` | 是否触发编译或执行超时 |
 | `truncated` | 是否触发输出上限 |
 
-编译错误和程序错误使用 HTTP 200 加 `success: false` 表达。请求格式错误为 400、访问校验失败为 403、请求过大为 413、非 JSON 为 415、格式化语法错误为 422、任务满载为 429、执行器自身故障为 500。错误响应为 `{"error":"可读错误"}`。不接受未知 JSON 字段或多个 JSON 值。
+编译错误和程序错误使用 HTTP 200 加 `success: false` 表达。请求格式错误为 400、访问校验失败为 403、请求过大为 413、非 JSON 为 415、格式化语法错误为 422、工具链缺失为 424、任务满载为 429、执行器自身故障为 500。错误响应为 `{"error":"可读错误"}`。不接受未知 JSON 字段或多个 JSON 值。
 
 ## 测试与课程维护
 
@@ -141,7 +144,7 @@ go vet ./...
 go build -buildvcs=false -o workshop .
 ```
 
-Go 测试会真实编译运行程序，验证正常输出、标准输入、stderr、编译失败、panic、测试成功 / 失败、执行 / 编译超时、输出截断、临时目录清理、环境过滤、接口校验和并发上限。`TestLessonPrograms` 执行所有课程示例及练习参考解法。
+Go 测试会真实编译运行程序，验证正常输出、标准输入、stderr、编译失败、panic、测试成功 / 失败、执行 / 编译超时、输出截断、临时目录清理、环境过滤、接口校验和并发上限。`TestLessonPrograms` 执行所有 Go 课程示例及练习参考解法；其他语言工具链测试按本机检测结果执行，缺失工具链时跳过对应语言。
 
 前端行为测试需要 Node.js 18+，无需 `npm install`：
 
@@ -151,7 +154,7 @@ node --check web/app.js
 node --check web/editor.js
 ```
 
-修改课程时维护 `web/lessons.json` 中唯一的 `id`、分组、概念讲解、示例、练习及预期输出。保持示例只依赖标准库，结果可重复；测试模式允许测试框架自己的时间信息。修改后执行 `go test -run TestLessonPrograms -v`。再在浏览器检查课程导航、示例 / 练习草稿隔离、手机布局和错误反馈。
+修改课程时维护 `web/lessons.json` 或 `web/languages/*.json` 中唯一的 `id`、分组、概念讲解、示例、练习及预期输出。保持示例只依赖标准库，结果可重复；测试模式允许测试框架自己的时间信息。修改后执行 `go test -run 'TestLessonPrograms|TestAdditionalLanguagePrograms' -v`。再在浏览器检查语言切换、课程导航、示例 / 练习草稿隔离、手机布局和错误反馈。
 
 ## 故障排查
 

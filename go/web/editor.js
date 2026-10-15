@@ -20,6 +20,25 @@ export function highlightGo(source) {
   return output + escapeHTML(source.slice(offset)) + "\n";
 }
 
+export function highlightSource(source, language) {
+  if (language === "go") return highlightGo(source);
+  const pattern = language === "python"
+    ? /#[^\n]*|"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:def|return|if|elif|else|for|while|in|import|from|as|try|except|finally|with|class|True|False|None|and|or|not|lambda|yield)\b|\b(?:print|len|range|int|str|list|dict|set|open|json)\b|\b\d+(?:\.\d+)?\b/g
+    : language === "rust"
+      ? /\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:fn|let|mut|pub|use|mod|struct|enum|impl|trait|match|if|else|for|in|loop|return|move|ref|const|static|true|false|Some|None|Ok|Err)\b|\b(?:String|str|Vec|Option|Result|println|format|usize|u16|i32|i64|bool)\b|\b\d+(?:\.\d+)?\b/g
+      : /\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:include|define|int|char|double|float|void|const|struct|class|public|private|return|if|else|for|while|using|namespace|auto|static|template|typename|new|delete|true|false|nullptr)\b|\b(?:printf|scanf|cout|cin|std|vector|string|size_t)\b|\b\d+(?:\.\d+)?\b/g;
+  let output = "";
+  let offset = 0;
+  for (const match of source.matchAll(pattern)) {
+    const token = match[0];
+    const kind = token.startsWith("//") || token.startsWith("/*") || token.startsWith("#") ? "comment" : /^["'`]/.test(token) ? "string" : /^\d/.test(token) ? "number" : /^(print|len|range|int|str|list|dict|set|open|json|String|str|Vec|Option|Result|println|format|usize|u16|i32|i64|bool|printf|scanf|cout|cin|std|vector|string|size_t)$/.test(token) ? "builtin" : "keyword";
+    output += escapeHTML(source.slice(offset, match.index));
+    output += `<span class="token-${kind}">${escapeHTML(token)}</span>`;
+    offset = match.index + token.length;
+  }
+  return output + escapeHTML(source.slice(offset)) + "\n";
+}
+
 export function editSelection(source, start, end, key, shift = false) {
   const lineStart = source.lastIndexOf("\n", start - 1) + 1;
   const prefix = source.slice(lineStart, start);

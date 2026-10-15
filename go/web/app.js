@@ -1,7 +1,7 @@
-import { escapeHTML, highlightGo, editSelection, matchesExpected } from "./editor.js";
+import { escapeHTML, highlightSource, editSelection, matchesExpected } from "./editor.js";
 
 const element = id => document.getElementById(id);
-const storageKey = "language-practice.go.v1";
+const storageKey = "language-practice.v2";
 const editor = element("code-editor");
 let storageWarning = "";
 let toastTimer;
@@ -10,25 +10,34 @@ let activeRequest;
 let escapeTab = false;
 let lessons = [];
 let config = null;
+let languageCatalog = [];
+let environmentReports = [];
 let busy = false;
 let exercise = "example";
 let lastResult = null;
 const state = restoreState();
 
 function restoreState() {
-  const empty = { version: 1, lesson: "hello", view: "learn", drafts: {}, completed: [], history: [] };
+  const empty = { version: 2, language: "go", lesson: "hello", view: "learn", drafts: {}, completed: [], history: [], profiles: {} };
   try {
-    const raw = localStorage.getItem(storageKey);
+    const raw = localStorage.getItem(storageKey) || localStorage.getItem("language-practice.go.v1");
     if (!raw) return empty;
     const saved = JSON.parse(raw);
-    if (saved?.version !== 1 || !saved.drafts || typeof saved.drafts !== "object" || Array.isArray(saved.drafts)) throw new Error("无法识别保存的数据格式");
+    if (saved?.version === 1 && saved.drafts && typeof saved.drafts === "object" && !Array.isArray(saved.drafts)) {
+      return { ...empty, lesson: typeof saved.lesson === "string" ? saved.lesson : "hello", view: saved.view === "lab" ? "lab" : "learn", drafts: saved.drafts, completed: Array.isArray(saved.completed) ? saved.completed.filter(item => typeof item === "string") : [], history: Array.isArray(saved.history) ? saved.history : [] };
+    }
+    if (saved?.version !== 2 || !saved.profiles || typeof saved.profiles !== "object" || Array.isArray(saved.profiles)) throw new Error("无法识别保存的数据格式");
+    const language = typeof saved.language === "string" ? saved.language : "go";
+    const profile = saved.profiles[language] || {};
     return {
       ...empty,
-      lesson: typeof saved.lesson === "string" ? saved.lesson : "hello",
+      language,
+      lesson: typeof profile.lesson === "string" ? profile.lesson : "hello",
       view: saved.view === "lab" ? "lab" : "learn",
-      drafts: saved.drafts,
-      completed: Array.isArray(saved.completed) ? saved.completed.filter(item => typeof item === "string") : [],
-      history: Array.isArray(saved.history) ? saved.history.filter(item => typeof item?.title === "string" && typeof item?.output === "string" && typeof item?.time === "number").slice(0, 8) : [],
+      drafts: profile.drafts && typeof profile.drafts === "object" ? profile.drafts : {},
+      completed: Array.isArray(profile.completed) ? profile.completed.filter(item => typeof item === "string") : [],
+      history: Array.isArray(profile.history) ? profile.history.filter(item => typeof item?.title === "string" && typeof item?.output === "string" && typeof item?.time === "number").slice(0, 8) : [],
+      profiles: saved.profiles,
     };
   } catch (error) {
     storageWarning = `无法恢复本地记录：${error.message}。本次仍可继续学习。`;
@@ -38,6 +47,7 @@ function restoreState() {
 
 function persist() {
   try {
+    state.profiles[state.language] = { lesson: state.lesson, drafts: state.drafts, completed: state.completed, history: state.history };
     localStorage.setItem(storageKey, JSON.stringify(state));
     element("save-status").textContent = "草稿已保存在本机";
   } catch (error) {
@@ -51,6 +61,18 @@ function persist() {
 
 function currentLesson() {
   return lessons.find(lesson => lesson.id === state.lesson) || lessons[0];
+}
+
+function currentLanguage() {
+  return languageCatalog.find(language => language.id === state.language) || languageCatalog[0] || { id: "go", title: "Go", symbol: "Go", extension: ".go", supportsTests: true };
+}
+
+function currentEnvironment() {
+  return environmentReports.find(report => report.language === state.language) || { ready: false, runtime: {}, compiler: {}, formatter: {} };
+}
+
+function isLanguageReady() {
+  return Boolean(currentEnvironment().ready);
 }
 
 function draftKey() {
@@ -93,6 +115,28 @@ function renderCourseList() {
   if (!count) element("course-list").innerHTML = '<p class="search-empty">没有找到匹配的概念。试试「接口」或「channel」。</p>';
 }
 
+function renderLanguageSelect() {
+  element("language-select").innerHTML = languageCatalog.map(language => `<option value="${language.id}">${escapeHTML(language.title)} · ${escapeHTML(language.english)}</option>`).join("");
+  element("language-select").value = state.language;
+}
+
+function renderLanguageChrome() {
+  const language = currentLanguage();
+  const environment = currentEnvironment();
+  element("language-symbol").textContent = language.symbol;
+  element("language-title").textContent = `${language.title} 语言工作台`;
+  element("language-english").textContent = language.english;
+  element("breadcrumb-language").textContent = language.title;
+  element("hero-language").textContent = language.title;
+  element("file-symbol").textContent = language.title.toUpperCase();
+  element("local-badge-label").textContent = environment.ready ? "本地执行" : "环境待安装";
+  element("lesson-count").textContent = `${lessons.length} LESSONS`;
+  element("hero-lesson-count").textContent = lessons.length;
+  element("connection-label").textContent = environment.ready ? `${language.title} · 环境就绪` : `${language.title} · 需要安装`;
+  element("connection").classList.toggle("offline", !environment.ready);
+  renderLanguageSelect();
+}
+
 function renderProgress() {
   const completed = new Set(state.completed.filter(id => lessons.some(lesson => lesson.id === id))).size;
   element("progress-text").innerHTML = `学习进度 <strong>${completed} / ${lessons.length}</strong>`;
@@ -107,6 +151,7 @@ function renderProgress() {
 function renderLesson() {
   const lesson = currentLesson();
   const index = lessons.indexOf(lesson);
+  const language = currentLanguage();
   element("breadcrumb-group").textContent = lesson.group;
   element("lesson-number").textContent = `${String(index + 1).padStart(2, "0")} / ${lessons.length}`;
   element("lesson-duration").textContent = `约 ${lesson.minutes} 分钟`;
@@ -114,16 +159,20 @@ function renderLesson() {
   element("lesson-title").textContent = lesson.title;
   element("lesson-summary").textContent = lesson.summary;
   element("lesson-tags").innerHTML = lesson.tags.map(tag => `<span>${escapeHTML(tag)}</span>`).join("");
-  element("lesson-sections").innerHTML = lesson.sections.map((section, sectionIndex) => `<section class="lesson-section"><h3><span class="section-index">${String(sectionIndex + 1).padStart(2, "0")}</span>${escapeHTML(section.title)}</h3><p>${escapeHTML(section.text)}</p><pre><code>${highlightGo(section.code)}</code></pre></section>`).join("");
+  element("lesson-sections").innerHTML = lesson.sections.map((section, sectionIndex) => `<section class="lesson-section"><h3><span class="section-index">${String(sectionIndex + 1).padStart(2, "0")}</span>${escapeHTML(section.title)}</h3><p>${escapeHTML(section.text)}</p><pre><code>${highlightSource(section.code, state.language)}</code></pre></section>`).join("");
   element("lesson-tip").textContent = lesson.tip;
   element("challenge-description").textContent = lesson.challenge.description;
   element("challenge-hint").textContent = lesson.challenge.hint;
   element("challenge-hint").hidden = true;
   element("hint-button").textContent = "给我一点提示";
   element("expected-output").textContent = lesson.challenge.expected;
+  element("execution-mode").innerHTML = language.supportsTests ? '<option value="run">运行程序</option><option value="test">运行测试</option>' : '<option value="run">运行程序</option>';
+  element("execution-mode").disabled = busy;
+  element("run-shortcut").textContent = "Ctrl ↵ 运行";
   element("next-button").disabled = index === lessons.length - 1 || busy;
   element("next-button").innerHTML = index === lessons.length - 1 ? "已是最后一课" : "下一课 <span>→</span>";
-  document.title = `${lesson.title} · Go 语言工作台 · 码间`;
+  document.title = `${lesson.title} · ${currentLanguage().title} 语言工作台 · 码间`;
+  renderLanguageChrome();
   renderCourseList();
   renderProgress();
   renderView();
@@ -143,10 +192,11 @@ function renderView() {
 function loadDraft() {
   const lesson = currentLesson();
   const saved = state.drafts[draftKey()];
-  const valid = saved && typeof saved.code === "string" && typeof saved.input === "string" && ["run", "test"].includes(saved.mode);
+  const supportsTests = currentLanguage().supportsTests;
+  const valid = saved && typeof saved.code === "string" && typeof saved.input === "string" && ["run", "test"].includes(saved.mode) && (supportsTests || saved.mode === "run");
   editor.value = valid ? saved.code : exercise === "example" ? lesson.example : lesson.challenge.code;
   element("stdin").value = valid ? saved.input : lesson.input || "";
-  element("execution-mode").value = valid ? saved.mode : lesson.mode;
+  element("execution-mode").value = valid ? saved.mode : supportsTests && lesson.mode === "test" ? "test" : "run";
   editor.scrollTop = 0;
   editor.scrollLeft = 0;
   editor.setSelectionRange(0, 0);
@@ -162,9 +212,10 @@ function loadDraft() {
 }
 
 function updateEditor() {
-  element("highlighted-code").innerHTML = highlightGo(editor.value);
+  element("highlighted-code").innerHTML = highlightSource(editor.value, state.language);
   element("line-numbers").textContent = Array.from({ length: editor.value.split("\n").length }, (_, index) => index + 1).join("\n");
-  element("filename").textContent = element("execution-mode").value === "test" ? "main_test.go" : "main.go";
+  const language = currentLanguage();
+  element("filename").textContent = element("execution-mode").value === "test" ? "main_test.go" : `main${language.extension}`;
   syncScroll();
   updateCursor();
 }
@@ -192,7 +243,7 @@ function navigate(view, lessonID, push = true) {
     renderLesson();
     window.scrollTo({ top: 0, behavior: "instant" });
   } else renderView();
-  if (push) history.pushState(null, "", `#${state.view}/${state.lesson}`);
+  if (push) history.pushState(null, "", `#${state.view}/${state.language}/${state.lesson}`);
   persist();
   closeSidebar();
 }
@@ -220,7 +271,9 @@ function clearOutput() {
   element("output-status").className = "output-status";
   element("output-label").textContent = "准备就绪";
   element("output-meta").textContent = "";
-  element("output").textContent = `${element("execution-mode").value === "test" ? "$ go test -v" : "$ go run main.go"}\n\n点击「运行代码」，让想法发生。`;
+  const language = currentLanguage();
+  const command = element("execution-mode").value === "test" ? "$ go test -v" : language.id === "python" ? "$ python main.py" : `$ ${language.id} main${language.extension}`;
+  element("output").textContent = `${command}\n\n点击「运行代码」，让想法发生。`;
   element("output").classList.add("muted-output");
   element("challenge-feedback").hidden = true;
 }
@@ -229,10 +282,10 @@ function setBusy(value, kind = "run") {
   busy = value;
   editor.readOnly = value;
   element("stdin").readOnly = value;
-  document.querySelectorAll("[data-lesson], [data-view], #execution-mode, #example-button, #challenge-button, #start-challenge, #reset-button, #clear-output, #complete-button").forEach(button => { button.disabled = value; });
+  document.querySelectorAll("[data-lesson], [data-view], #language-select, #environment-button, #execution-mode, #example-button, #challenge-button, #start-challenge, #reset-button, #clear-output, #complete-button").forEach(button => { button.disabled = value; });
   element("next-button").disabled = value || currentLesson() === lessons[lessons.length - 1];
-  element("run-button").disabled = value || !config;
-  element("format-button").disabled = value || !config;
+  element("run-button").disabled = value || !config || !isLanguageReady();
+  element("format-button").disabled = value || !config || !currentEnvironment().formatter?.installed && state.language !== "go";
   element("stop-button").hidden = !value || kind !== "run";
   element("run-button").querySelector("span").textContent = value && kind === "run" ? "运行中…" : "运行代码";
   editor.setAttribute("aria-busy", String(value));
@@ -244,18 +297,18 @@ async function connect() {
     const response = await fetch("/api/config", { signal: AbortSignal.timeout(5000) });
     if (!response.ok) throw new Error("本地服务不可用");
     config = await response.json();
-    const version = config.goVersion.match(/go\d+\.\d+(?:\.\d+)?/)?.[0].replace("go", "Go ") || "Go";
-    element("connection-label").textContent = `${version} · 已连接`;
-    element("connection").classList.remove("offline");
-    element("run-button").disabled = busy || !lessons.length;
-    element("format-button").disabled = busy || !lessons.length;
+    languageCatalog = Array.isArray(config.languages) ? config.languages : [];
+    environmentReports = Array.isArray(config.environments) ? config.environments : [];
+    renderLanguageChrome();
+    element("run-button").disabled = busy || !lessons.length || !isLanguageReady();
+    element("format-button").disabled = busy || !lessons.length || (!currentEnvironment().formatter?.installed && state.language !== "go");
   } catch (error) {
     config = null;
     element("connection-label").textContent = "连接断开 · 点击重试";
     element("connection").classList.add("offline");
     element("run-button").disabled = true;
     element("format-button").disabled = true;
-    throw new Error(`无法连接本地 Go 服务：${error.message}`);
+    throw new Error(`无法连接本地语言服务：${error.message}`);
   }
 }
 
@@ -263,7 +316,7 @@ async function post(path, payload, signal) {
   if (!config) throw new Error("请点击右上角重新连接本地服务。");
   const response = await fetch(path, {
     method: "POST", headers: { "Content-Type": "application/json", "X-Practice-Token": config.token },
-    body: JSON.stringify(payload), signal,
+    body: JSON.stringify({ language: state.language, ...payload }), signal,
   });
   const body = await response.json();
   if (!response.ok) throw new Error(body.error || `请求失败（${response.status}）`);
@@ -272,6 +325,7 @@ async function post(path, payload, signal) {
 
 async function runCode() {
   if (busy || !config || !lessons.length) return;
+  if (!isLanguageReady()) { toast(`${currentLanguage().title} 环境未就绪，请打开「环境检测」查看安装步骤。`); return; }
   if (!editor.value.trim()) { toast("先写一点代码，再试着运行。"); return; }
   saveDraft(true);
   const lesson = currentLesson();
@@ -285,7 +339,7 @@ async function runCode() {
   element("output-label").textContent = "编译并运行中";
   element("output-meta").textContent = "";
   element("output").classList.add("muted-output");
-  element("output").textContent = "$ go build …\n\n首次编译可能需要一些时间。你可以随时停止。";
+  element("output").textContent = `${currentLanguage().title} 正在准备执行…\n\n首次编译可能需要一些时间。你可以随时停止。`;
   try {
     const result = await post("/api/run", { code: source, input: element("stdin").value, mode }, activeRequest.signal);
     lastResult = result;
@@ -293,7 +347,7 @@ async function runCode() {
     state.history.unshift({ title: lesson.title, exercise, time: Date.now(), ...result });
     state.history = state.history.slice(0, 8);
     if (exercise === "challenge") {
-      const matched = mode === lesson.mode && matchesExpected(result, lesson.challenge.expected, mode);
+      const matched = mode === (lesson.mode || "run") && matchesExpected(result, lesson.challenge.expected, mode);
       const feedback = element("challenge-feedback");
       feedback.hidden = false;
       feedback.classList.toggle("mismatch", !matched);
@@ -332,15 +386,82 @@ function renderHistory() {
 
 async function formatCode() {
   if (busy || !config || !lessons.length) return;
+  if (state.language !== "go" && !currentEnvironment().formatter?.installed) { toast("当前语言没有可用格式化工具，请先查看环境文档。"); return; }
   setBusy(true, "format");
   try {
     const result = await post("/api/format", { code: editor.value }, AbortSignal.timeout(10000));
     editor.value = result.code;
     updateEditor();
     saveDraft(true);
-    toast("已按 gofmt 规则整理代码。");
+    toast(state.language === "go" ? "已按 gofmt 规则整理代码。" : "已按当前语言格式化规则整理代码。");
   } catch (error) { toast(error.message); }
   finally { setBusy(false); }
+}
+
+function saveCurrentProfile() {
+  state.profiles[state.language] = { lesson: state.lesson, drafts: state.drafts, completed: state.completed, history: state.history };
+}
+
+function activateProfile(languageID) {
+  saveCurrentProfile();
+  const profile = state.profiles[languageID] || { lesson: "hello", drafts: {}, completed: [], history: [] };
+  state.language = languageID;
+  state.lesson = typeof profile.lesson === "string" ? profile.lesson : "hello";
+  state.drafts = profile.drafts && typeof profile.drafts === "object" ? profile.drafts : {};
+  state.completed = Array.isArray(profile.completed) ? profile.completed : [];
+  state.history = Array.isArray(profile.history) ? profile.history : [];
+}
+
+async function loadLessons(languageID) {
+  const language = languageCatalog.find(item => item.id === languageID);
+  if (!language) throw new Error("语言配置不存在");
+  const response = await fetch(language.lessonFile, { cache: "no-store" });
+  if (!response.ok) throw new Error(`${language.title} 课程文件加载失败`);
+  const nextLessons = await response.json();
+  if (!Array.isArray(nextLessons) || !nextLessons.length) throw new Error(`${language.title} 课程数据为空`);
+  lessons = nextLessons;
+  if (!lessons.some(lesson => lesson.id === state.lesson)) state.lesson = lessons[0].id;
+}
+
+async function switchLanguage(languageID) {
+  if (busy || languageID === state.language) return;
+  const language = languageCatalog.find(item => item.id === languageID);
+  if (!language) return;
+  saveDraft(true);
+  activateProfile(languageID);
+  exercise = "example";
+  try {
+    await loadLessons(languageID);
+    renderLesson();
+    renderLanguageChrome();
+    state.view = "learn";
+    renderView();
+    setBusy(false);
+    history.pushState(null, "", `#learn/${state.language}/${state.lesson}`);
+    persist();
+    closeSidebar();
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+function environmentToolRow(label, symbol, tool) {
+  const ready = Boolean(tool?.installed);
+  const detail = ready ? `${escapeHTML(tool.version || tool.path || tool.command)}` : `未找到 ${escapeHTML(tool?.command || "工具")}`;
+  return `<div class="environment-row"><span class="environment-symbol">${escapeHTML(symbol)}</span><div><strong>${escapeHTML(label)}</strong><small title="${detail}">${detail}</small></div><span class="environment-state ${ready ? "ready" : "missing"}">${ready ? "已安装" : "未安装"}</span></div>`;
+}
+
+function openEnvironmentDialog() {
+  const language = currentLanguage();
+  const report = currentEnvironment();
+  element("environment-summary").textContent = report.ready ? `${language.title} 可以在当前工作台运行。下面是本机检测到的工具链信息。` : `${language.title} 当前不能运行。按文档完成 Windows 安装后，重启服务并重新检测。`;
+  const runtimeLabel = language.id === "python" ? "Python 运行时" : language.id === "go" ? "Go 工具链" : `${language.title} 编译器`;
+  const rows = [environmentToolRow(runtimeLabel, language.symbol, report.runtime)];
+  if (language.id !== "python" && language.id !== "go") rows.push(environmentToolRow("格式化工具", "fmt", report.formatter));
+  if (language.id === "go") rows.push(environmentToolRow("gofmt（内置）", "fmt", { installed: report.ready, command: "gofmt", version: report.compiler?.version }));
+  element("environment-content").innerHTML = rows.join("");
+  element("environment-doc-link").href = `/docs/windows-environment.md#${report.installDoc?.split("#")[1] || language.id}`;
+  element("environment-dialog").showModal();
 }
 
 function closeSidebar() {
@@ -364,6 +485,9 @@ function bindEvents() {
     if (button) navigate(state.view, button.dataset.lesson);
   });
   element("course-search").addEventListener("input", renderCourseList);
+  element("language-select").addEventListener("change", event => switchLanguage(event.target.value));
+  element("environment-button").addEventListener("click", openEnvironmentDialog);
+  element("connection").addEventListener("click", () => { if (config) openEnvironmentDialog(); else connect().catch(error => toast(error.message)); });
   element("example-button").addEventListener("click", () => selectExercise("example"));
   element("challenge-button").addEventListener("click", () => selectExercise("challenge"));
   element("start-challenge").addEventListener("click", () => {
@@ -410,7 +534,6 @@ function bindEvents() {
   element("stop-button").addEventListener("click", () => activeRequest?.abort());
   element("clear-output").addEventListener("click", clearOutput);
   document.querySelectorAll("[data-console]").forEach(button => button.addEventListener("click", () => setConsole(button.dataset.console)));
-  element("connection").addEventListener("click", () => connect().catch(error => toast(error.message)));
   element("reset-button").addEventListener("click", () => element("confirm-dialog").showModal());
   element("confirm-dialog").addEventListener("close", () => {
     if (element("confirm-dialog").returnValue !== "reset") return;
@@ -445,27 +568,24 @@ function bindEvents() {
   });
   window.addEventListener("pagehide", () => { saveDraft(true); activeRequest?.abort(); });
   window.addEventListener("popstate", () => {
-    const [view, lesson] = location.hash.slice(1).split("/");
-    navigate(view, lesson, false);
+    const parts = location.hash.slice(1).split("/");
+    if (parts.length === 3 && languageCatalog.some(language => language.id === parts[1])) {
+      switchLanguage(parts[1]).then(() => navigate(parts[0], parts[2], false));
+    } else {
+      navigate(parts[0], parts[1], false);
+    }
   });
 }
 
 async function initialize() {
   try {
-    const results = await Promise.allSettled([
-      fetch("/lessons.json").then(response => { if (!response.ok) throw new Error("课程文件加载失败"); return response.json(); }),
-      connect(),
-    ]);
-    if (results[0].status === "rejected") throw results[0].reason;
-    lessons = results[0].value;
-    if (!Array.isArray(lessons) || !lessons.length) throw new Error("课程数据为空");
-    const [routeView, routeLesson] = location.hash.slice(1).split("/");
-    if (lessons.some(lesson => lesson.id === routeLesson)) {
-      state.lesson = routeLesson;
-      state.view = routeView === "lab" ? "lab" : "learn";
-    }
+    await connect();
+    const [routeView, routeLanguage, routeLesson] = location.hash.slice(1).split("/");
+    if (routeLanguage && languageCatalog.some(language => language.id === routeLanguage)) activateProfile(routeLanguage);
+    else if (routeView === "lab" || routeView === "learn") state.view = routeView;
+    await loadLessons(state.language);
+    if (routeLesson && lessons.some(lesson => lesson.id === routeLesson)) state.lesson = routeLesson;
     if (!lessons.some(lesson => lesson.id === state.lesson)) state.lesson = lessons[0].id;
-    element("lesson-count").textContent = `${lessons.length} LESSONS`;
     const mac = /Mac|iPhone|iPad/.test(navigator.platform);
     element("run-shortcut").textContent = `${mac ? "⌘" : "Ctrl"} ↵ 运行`;
     document.querySelector(".search-box kbd").textContent = mac ? "⌘ K" : "⌃ K";
@@ -473,8 +593,8 @@ async function initialize() {
     renderLesson();
     setBusy(false);
     closeSidebar();
-    history.replaceState(null, "", `#${state.view}/${state.lesson}`);
-    if (results[1].status === "rejected") toast(results[1].reason.message);
+    history.replaceState(null, "", `#${state.view}/${state.language}/${state.lesson}`);
+    if (!isLanguageReady()) toast(`${currentLanguage().title} 环境未安装，点击「环境检测」查看 Windows 配置步骤。`);
     else if (storageWarning) toast(storageWarning);
   } catch (error) {
     element("load-error").hidden = false;

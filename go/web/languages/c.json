@@ -1,0 +1,58 @@
+[
+  {
+    "id": "hello", "title": "第一个 C 程序", "english": "Know what runs", "group": "C 基础", "minutes": 10,
+    "summary": "从预处理、编译到链接，建立 C 程序从源码到可执行文件的基本模型。",
+    "tags": ["main", "stdio", "compile"],
+    "sections": [
+      {"title": "头文件声明能力", "text": "#include 引入声明，stdio.h 提供 printf 的声明。main 返回 int，返回 0 表示成功。C 不会替你检查所有边界，编译器警告应当认真处理。", "code": "#include <stdio.h>\n\nint main(void) {\n    printf(\"Hello, C!\\n\");\n    return 0;\n}"},
+      {"title": "编译器是你的第一位审阅者", "text": "本地工作台使用 GCC、Clang 或 MSVC 编译单个源文件。C 源码不会在运行时解释，每次运行都会先生成临时可执行文件。", "code": "gcc -std=c17 -Wall main.c -o program\n./program"}
+    ],
+    "tip": "C 的字符串以 '\\0' 结尾，printf 的格式符必须与参数类型匹配。养成打开编译警告的习惯。",
+    "mode": "run", "input": "",
+    "example": "#include <stdio.h>\n\nint main(void) {\n    printf(\"Hello, C!\\n\");\n    printf(\"Close to the machine.\\n\");\n    return 0;\n}\n",
+    "expected": "Hello, C!\nClose to the machine.",
+    "challenge": {"description": "输出两行 Hello, C! 和 Compile with intent.，通过变量保存第二行文本。", "hint": "声明 const char *message，然后传给 printf(\"%s\\n\", message)。", "code": "#include <stdio.h>\n\nint main(void) {\n    const char *message = \"Hello\";\n    printf(\"%s\\n\", message);\n    return 0;\n}\n", "expected": "Hello, C!\nCompile with intent.", "solution": "#include <stdio.h>\n\nint main(void) {\n    const char *message = \"Compile with intent.\";\n    printf(\"Hello, C!\\n\");\n    printf(\"%s\\n\", message);\n    return 0;\n}\n"}
+  },
+  {
+    "id": "control", "title": "类型、条件与循环", "english": "Make every bit count", "group": "C 基础", "minutes": 12,
+    "summary": "理解整数运算、边界判断和循环，让机器执行明确的步骤。",
+    "tags": ["int", "if", "for"],
+    "sections": [
+      {"title": "类型决定解释方式", "text": "int 适合整数，double 适合小数。整数相除仍是整数；需要小数结果时必须显式转换。size_t 常用于表示对象大小。", "code": "int completed = 3;\nint total = 4;\ndouble ratio = (double) completed / total;"},
+      {"title": "边界写在循环条件里", "text": "for 的初始化、条件和更新共同定义范围。数组下标从 0 开始，访问前应确保 index >= 0 且 index < length。", "code": "for (int index = 0; index < 3; index++) {\n    printf(\"%d\\n\", index);\n}"}
+    ],
+    "tip": "编译时建议开启 -Wall -Wextra；MSVC 使用 /W4。不要依赖有符号整数溢出后的结果。",
+    "mode": "run", "input": "",
+    "example": "#include <stdio.h>\n\nint main(void) {\n    int total = 0;\n    for (int number = 1; number <= 5; number++) {\n        if (number % 2 == 0) {\n            total += number;\n        }\n    }\n    printf(\"even total: %d\\n\", total);\n    return 0;\n}\n",
+    "expected": "even total: 6",
+    "challenge": {"description": "计算 1 到 10（含边界）的奇数之和并输出 odd total: 25。", "hint": "用 number % 2 != 0 判断奇数，并让循环条件包含 10。", "code": "#include <stdio.h>\n\nint main(void) {\n    int total = 0;\n    printf(\"odd total: %d\\n\", total);\n    return 0;\n}\n", "expected": "odd total: 25", "solution": "#include <stdio.h>\n\nint main(void) {\n    int total = 0;\n    for (int number = 1; number <= 10; number++) {\n        if (number % 2 != 0) { total += number; }\n    }\n    printf(\"odd total: %d\\n\", total);\n    return 0;\n}\n"}
+  },
+  {
+    "id": "pointers", "title": "函数与指针", "english": "See the address", "group": "内存与抽象", "minutes": 15,
+    "summary": "理解地址、解引用和数组参数，建立 C 内存模型的第一层直觉。",
+    "tags": ["function", "pointer", "array"],
+    "sections": [
+      {"title": "传值与传地址", "text": "C 的普通参数按值传递。想让函数修改调用者的变量，就传入它的地址，并用 * 解引用。指针必须指向有效对象，或明确为 NULL。", "code": "void increment(int *value) {\n    if (value != NULL) {\n        (*value)++;\n    }\n}"},
+      {"title": "数组参数不会携带长度", "text": "传入函数时，数组通常退化为指向第一个元素的指针。函数无法凭参数本身知道长度，因此需要额外传 length。", "code": "int sum(const int *values, size_t length) {\n    int total = 0;\n    for (size_t index = 0; index < length; index++) total += values[index];\n    return total;\n}"}
+    ],
+    "tip": "指针运算只在同一个数组对象内有意义。释放内存后不要继续使用指针；本课程只使用栈上数组，避免把分配和释放混在一起。",
+    "mode": "run", "input": "",
+    "example": "#include <stdio.h>\n\nvoid increment(int *value) {\n    (*value)++;\n}\n\nint main(void) {\n    int count = 1;\n    increment(&count);\n    printf(\"count: %d\\n\", count);\n    return 0;\n}\n",
+    "expected": "count: 2",
+    "challenge": {"description": "实现 swap，通过指针交换 left 和 right，输出 20 10。", "hint": "使用一个 int temporary 保存 *left，再依次赋值。", "code": "#include <stdio.h>\n\nvoid swap(int *left, int *right) {\n}\n\nint main(void) {\n    int left = 10;\n    int right = 20;\n    swap(&left, &right);\n    printf(\"%d %d\\n\", left, right);\n    return 0;\n}\n", "expected": "20 10", "solution": "#include <stdio.h>\n\nvoid swap(int *left, int *right) {\n    int temporary = *left;\n    *left = *right;\n    *right = temporary;\n}\n\nint main(void) {\n    int left = 10; int right = 20; swap(&left, &right); printf(\"%d %d\\n\", left, right); return 0;\n}\n"}
+  },
+  {
+    "id": "structs", "title": "结构体与输入", "english": "Name your data", "group": "内存与抽象", "minutes": 15,
+    "summary": "用结构体表达领域数据，练习格式化输入和初始化。",
+    "tags": ["struct", "scanf", "const"],
+    "sections": [
+      {"title": "结构体把字段放在一起", "text": "struct 将相关字段组合成一个值。可以用复合字面量初始化，并通过 . 访问字段。传递大结构体时通常考虑传指针。", "code": "struct Service {\n    const char *name;\n    int port;\n    int healthy;\n};"},
+      {"title": "scanf 需要地址", "text": "scanf 将输入写回变量，因此整数参数要传 &value。生产程序应检查返回值，并限制字符串读取长度；练习里可用固定输入验证路径。", "code": "int port = 0;\nif (scanf(\"%d\", &port) == 1) {\n    printf(\"port: %d\\n\", port);\n}"}
+    ],
+    "tip": "不要让 scanf 的失败结果留在输入流中反复读取。服务端代码更常使用 fgets 读一整行，再用 strtol 做可控解析。",
+    "mode": "run", "input": "",
+    "example": "#include <stdio.h>\n\nstruct Service {\n    const char *name;\n    int port;\n};\n\nint main(void) {\n    struct Service service = {\"api\", 8080};\n    printf(\"%s:%d\\n\", service.name, service.port);\n    return 0;\n}\n",
+    "expected": "api:8080",
+    "challenge": {"description": "读取一个整数端口并输出 port: <value>。输入 3000 时应输出 port: 3000。", "hint": "用 scanf(\"%d\", &port) 读取，检查返回值后 printf。", "code": "#include <stdio.h>\n\nint main(void) {\n    int port = 0;\n    printf(\"port: %d\\n\", port);\n    return 0;\n}\n", "input": "3000\n", "expected": "port: 3000", "solution": "#include <stdio.h>\n\nint main(void) {\n    int port = 0;\n    if (scanf(\"%d\", &port) == 1) { printf(\"port: %d\\n\", port); }\n    return 0;\n}\n"}
+  }
+]

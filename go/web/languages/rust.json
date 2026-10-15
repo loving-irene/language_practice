@@ -1,0 +1,58 @@
+[
+  {
+    "id": "hello", "title": "第一个 Rust 程序", "english": "Make invalid states hard", "group": "Rust 基础", "minutes": 10,
+    "summary": "从 println! 宏开始，认识 Rust 的静态类型与编译执行路径。",
+    "tags": ["fn", "let", "macro"],
+    "sections": [
+      {"title": "宏和函数各有边界", "text": "fn main 是入口。println! 是宏而不是普通函数，它可以在编译期处理格式串。let 默认绑定不可变值，需要修改时显式使用 mut。", "code": "fn main() {\n    let language = \"Rust\";\n    println!(\"Hello, {language}!\");\n}"},
+      {"title": "编译器参与设计", "text": "rustc 会检查类型、借用和很多潜在错误。程序必须先通过编译，工作台再执行临时二进制；错误信息是学习的一部分。", "code": "let mut count = 0;\ncount += 1;\nprintln!(\"count: {count}\");"}
+    ],
+    "tip": "Rust 的格式化字符串可以直接捕获同名变量。运行前由 rustc 编译，不需要 Cargo 项目即可完成这些单文件练习。",
+    "mode": "run", "input": "",
+    "example": "fn main() {\n    let language = \"Rust\";\n    println!(\"Hello, {language}!\");\n    println!(\"Make invalid states hard.\");\n}\n",
+    "expected": "Hello, Rust!\nMake invalid states hard.",
+    "challenge": {"description": "输出两行 Hello, Rust! 和 Fearless systems.，使用变量保存第二行。", "hint": "声明 let message = \"Fearless systems.\"，再使用 println!。", "code": "fn main() {\n    println!(\"Hello\");\n}\n", "expected": "Hello, Rust!\nFearless systems.", "solution": "fn main() {\n    let message = \"Fearless systems.\";\n    println!(\"Hello, Rust!\");\n    println!(\"{message}\");\n}\n"}
+  },
+  {
+    "id": "ownership", "title": "所有权与借用", "english": "Move with confidence", "group": "Rust 核心", "minutes": 16,
+    "summary": "通过移动、借用和切片理解 Rust 如何在编译期管理内存。",
+    "tags": ["ownership", "borrow", "slice"],
+    "sections": [
+      {"title": "每个值只有一个所有者", "text": "赋值或传参可能移动 String 的所有权，原变量之后不能再使用。实现 Copy 的简单类型会复制。离开作用域时所有者自动释放资源。", "code": "let original = String::from(\"hello\");\nlet moved = original;\nprintln!(\"{moved}\");"},
+      {"title": "借用而不是复制", "text": "&T 是不可变借用，&mut T 是可变借用。同一时间可以有多个不可变借用，或者一个可变借用，但不能同时混用。", "code": "fn length(value: &str) -> usize {\n    value.len()\n}\nlet text = String::from(\"rust\");\nprintln!(\"{}\", length(&text));"}
+    ],
+    "tip": "编译器报借用错误时，先画出值的生命周期和借用范围。缩短一个变量的作用域通常比克隆数据更好。",
+    "mode": "run", "input": "",
+    "example": "fn length(value: &str) -> usize {\n    value.len()\n}\n\nfn main() {\n    let text = String::from(\"rust\");\n    println!(\"length: {}\", length(&text));\n    println!(\"still here: {text}\");\n}\n",
+    "expected": "length: 4\nstill here: rust",
+    "challenge": {"description": "实现 append_mark，借用可变 String 追加 !，输出 rust!。", "hint": "函数参数写成 &mut String，再调用 push('!')。", "code": "fn append_mark(value: &String) {\n}\n\nfn main() {\n    let mut text = String::from(\"rust\");\n    append_mark(&text);\n    println!(\"{text}\");\n}\n", "expected": "rust!", "solution": "fn append_mark(value: &mut String) {\n    value.push('!');\n}\n\nfn main() {\n    let mut text = String::from(\"rust\");\n    append_mark(&mut text);\n    println!(\"{text}\");\n}\n"}
+  },
+  {
+    "id": "enums", "title": "枚举与 Result", "english": "Model every outcome", "group": "Rust 核心", "minutes": 16,
+    "summary": "用枚举表达有限状态，用 Result 让失败路径进入类型系统。",
+    "tags": ["enum", "Option", "Result"],
+    "sections": [
+      {"title": "枚举是带名字的选择", "text": "enum 可以表达一组互斥状态，每个变体还可以携带数据。Option<T> 用 Some 和 None 表达“有值 / 无值”，不用空指针。", "code": "enum Health {\n    Healthy,\n    Failing { reason: String },\n}"},
+      {"title": "Result 把错误写进签名", "text": "Result<T, E> 表示成功或失败。match 必须覆盖分支；? 可以在当前函数返回错误时提前传播，前提是返回类型兼容。", "code": "fn parse_port(raw: &str) -> Result<u16, std::num::ParseIntError> {\n    let port = raw.parse()?;\n    Ok(port)\n}"}
+    ],
+    "tip": "unwrap 适合你能证明一定成功的教学示例；服务边界要给错误添加上下文，并决定如何返回给调用者。",
+    "mode": "run", "input": "",
+    "example": "fn parse_port(raw: &str) -> Result<u16, std::num::ParseIntError> {\n    raw.parse()\n}\n\nfn main() {\n    match parse_port(\"8080\") {\n        Ok(port) => println!(\"port: {port}\"),\n        Err(error) => println!(\"error: {error}\"),\n    }\n}\n",
+    "expected": "port: 8080",
+    "challenge": {"description": "让 parse_port 对非法输入返回 0，程序对 no-port 输出 port: 0。", "hint": "使用 parse::<u16>().unwrap_or(0)，或者在 match 的 Err 分支返回 0。", "code": "fn parse_port(raw: &str) -> u16 {\n    raw.parse().unwrap()\n}\n\nfn main() {\n    println!(\"port: {}\", parse_port(\"no-port\"));\n}\n", "expected": "port: 0", "solution": "fn parse_port(raw: &str) -> u16 {\n    raw.parse().unwrap_or(0)\n}\n\nfn main() {\n    println!(\"port: {}\", parse_port(\"no-port\"));\n}\n"}
+  },
+  {
+    "id": "collections", "title": "切片与迭代器", "english": "Transform without losing clarity", "group": "工程习惯", "minutes": 16,
+    "summary": "用 Vec 保存数据，用迭代器表达无副作用的过滤与映射。",
+    "tags": ["Vec", "iter", "map", "filter"],
+    "sections": [
+      {"title": "Vec 拥有一段连续内存", "text": "Vec<T> 可以增长并拥有其中的元素。&[T] 是借用的切片视图，适合只读函数参数。索引可能 panic，get 返回 Option 更适合不确定的边界。", "code": "fn first(values: &[i32]) -> Option<i32> {\n    values.first().copied()\n}"},
+      {"title": "迭代器是惰性的", "text": "map 和 filter 只描述变换，collect 或 for_each 等消费操作才会执行。类型推断复杂时，可以给 collect 指定目标类型。", "code": "let squares: Vec<_> = values.iter()\n    .filter(|value| **value % 2 == 0)\n    .map(|value| value * value)\n    .collect();"}
+    ],
+    "tip": "迭代器闭包中的引用层级取决于 iter、into_iter 以及方法签名。遇到类型错误时先写出参数类型，再决定是否解引用。",
+    "mode": "run", "input": "",
+    "example": "fn main() {\n    let values = vec![1, 2, 3, 4];\n    let squares: Vec<_> = values.iter()\n        .filter(|value| **value % 2 == 0)\n        .map(|value| value * value)\n        .collect();\n    println!(\"{:?}\", squares);\n}\n",
+    "expected": "[4, 16]",
+    "challenge": {"description": "把 values 中的正数求和，输出 positive total: 6。", "hint": "使用 iter().filter(|value| **value > 0).sum::<i32>()。", "code": "fn main() {\n    let values = vec![-2, 1, 5, -3];\n    let total = 0;\n    println!(\"positive total: {total}\");\n}\n", "expected": "positive total: 6", "solution": "fn main() {\n    let values = vec![-2, 1, 5, -3];\n    let total: i32 = values.iter().filter(|value| **value > 0).sum();\n    println!(\"positive total: {total}\");\n}\n"}
+  }
+]

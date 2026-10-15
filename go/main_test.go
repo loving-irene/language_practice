@@ -32,7 +32,7 @@ func sendRequest(app *application, method, path, body string) *httptest.Response
 
 func TestHTTPRoutes(test *testing.T) {
 	app := testApplication(test)
-	for _, path := range []string{"/", "/styles.css", "/app.js", "/editor.js", "/lessons.json", "/favicon.svg", "/api/config"} {
+	for _, path := range []string{"/", "/styles.css", "/app.js", "/editor.js", "/lessons.json", "/languages/python.json", "/languages/c.json", "/languages/cpp.json", "/languages/rust.json", "/docs/windows-environment.md", "/favicon.svg", "/api/config"} {
 		test.Run(path, func(test *testing.T) {
 			response := sendRequest(app, http.MethodGet, path, "")
 			if response.Code != http.StatusOK || response.Body.Len() == 0 {
@@ -45,6 +45,38 @@ func TestHTTPRoutes(test *testing.T) {
 	}
 	if response := sendRequest(app, http.MethodGet, "/does-not-exist", ""); response.Code != http.StatusNotFound {
 		test.Fatalf("unknown file status: %d", response.Code)
+	}
+}
+
+func TestConfigReportsLanguages(test *testing.T) {
+	app := testApplication(test)
+	response := sendRequest(app, http.MethodGet, "/api/config", "")
+	if response.Code != http.StatusOK {
+		test.Fatalf("config status: %d", response.Code)
+	}
+	var config struct {
+		Languages    []languageInfo      `json:"languages"`
+		Environments []environmentReport `json:"environments"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &config); err != nil {
+		test.Fatal(err)
+	}
+	if len(config.Languages) != len(languageCatalog) || len(config.Environments) != len(languageCatalog) {
+		test.Fatalf("unexpected language report sizes: %d, %d", len(config.Languages), len(config.Environments))
+	}
+	for _, language := range languageCatalog {
+		found := false
+		for _, report := range config.Environments {
+			if report.Language == language.ID {
+				found = true
+				if report.Ready != (app.runner.toolchains[language.ID].Compiler != nil || app.runner.toolchains[language.ID].Runtime != nil) {
+					test.Fatalf("%s readiness disagrees with detected toolchain", language.ID)
+				}
+			}
+		}
+		if !found {
+			test.Fatalf("missing environment report for %s", language.ID)
+		}
 	}
 }
 
@@ -233,5 +265,53 @@ func TestLessonPrograms(test *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestAdditionalLanguagePrograms(test *testing.T) {
+	app := testApplication(test)
+	for _, language := range []string{"python", "c", "cpp", "rust"} {
+		test.Run(language, func(test *testing.T) {
+			toolchain := app.runner.toolchains[language]
+			if err := toolchain.commandUnavailable(); err != nil {
+				test.Skipf("toolchain unavailable: %v", err)
+			}
+			data, err := webFiles.ReadFile("web/languages/" + language + ".json")
+			if err != nil {
+				test.Fatal(err)
+			}
+			var lessons []struct {
+				ID        string `json:"id"`
+				Example   string `json:"example"`
+				Expected  string `json:"expected"`
+				Challenge struct {
+					Input    string `json:"input"`
+					Expected string `json:"expected"`
+					Solution string `json:"solution"`
+				} `json:"challenge"`
+			}
+			if err := json.Unmarshal(data, &lessons); err != nil {
+				test.Fatal(err)
+			}
+			for _, lesson := range lessons {
+				for _, sample := range []struct {
+					name, code, input, expected string
+				}{
+					{"example", lesson.Example, "", lesson.Expected},
+					{"solution", lesson.Challenge.Solution, lesson.Challenge.Input, lesson.Challenge.Expected},
+				} {
+					test.Run(lesson.ID+"/"+sample.name, func(test *testing.T) {
+						result, err := app.runner.execute(context.Background(), codeRequest{Language: language, Code: sample.code, Input: sample.input, Mode: "run"})
+						if err != nil || !result.Success {
+							test.Fatalf("language program failed: %+v, %v", result, err)
+						}
+						actual := strings.TrimSpace(strings.ReplaceAll(result.Output, "\r\n", "\n"))
+						if actual != sample.expected {
+							test.Fatalf("got %q, want %q", actual, sample.expected)
+						}
+					})
+				}
+			}
+		})
 	}
 }

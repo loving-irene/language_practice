@@ -1,0 +1,58 @@
+[
+  {
+    "id": "hello", "title": "第一个 C++ 程序", "english": "Build with intent", "group": "C++ 基础", "minutes": 10,
+    "summary": "从 iostream 开始，理解 C++ 的类型、安全抽象和编译执行路径。",
+    "tags": ["iostream", "main", "compile"],
+    "sections": [
+      {"title": "流表达输入输出", "text": "iostream 提供 cout 和 cin。\n 是换行控制符，\nendl 会刷新缓冲区，除非需要刷新，否则优先使用 '\\n'。", "code": "#include <iostream>\n\nint main() {\n    std::cout << \"Hello, C++!\\n\";\n}"},
+      {"title": "先让类型表达约束", "text": "使用 const、auto 和引用减少无意的修改与复制。C++ 的编译器会把模板和类型检查提前到构建阶段。", "code": "const auto language = \"C++\";\nstd::cout << language << '\\n';"}
+    ],
+    "tip": "本地工作台使用 GCC、Clang 或 MSVC 编译 C++17 单文件。不同编译器的诊断文字会略有差异。",
+    "mode": "run", "input": "",
+    "example": "#include <iostream>\n\nint main() {\n    std::cout << \"Hello, C++!\\n\";\n    std::cout << \"Build with intent.\\n\";\n}\n",
+    "expected": "Hello, C++!\nBuild with intent.",
+    "challenge": {"description": "使用 const std::string 保存消息，输出 Hello, C++! 和 Zero-cost abstractions.。", "hint": "记得 include <string>，用两次 std::cout 输出并换行。", "code": "#include <iostream>\n\nint main() {\n    std::cout << \"Hello\" << '\\n';\n}\n", "expected": "Hello, C++!\nZero-cost abstractions.", "solution": "#include <iostream>\n#include <string>\n\nint main() {\n    const std::string message = \"Zero-cost abstractions.\";\n    std::cout << \"Hello, C++!\\n\";\n    std::cout << message << '\\n';\n}\n"}
+  },
+  {
+    "id": "containers", "title": "vector 与算法", "english": "Use the standard library", "group": "C++ 基础", "minutes": 14,
+    "summary": "用标准库容器和算法表达集合处理，减少手写索引带来的边界风险。",
+    "tags": ["vector", "range-for", "algorithm"],
+    "sections": [
+      {"title": "vector 管理连续元素", "text": "std::vector<T> 是可增长的连续容器。range-for 直接遍历元素；只读遍历可用 const auto& 避免复制和修改。", "code": "std::vector<int> values{1, 2, 3};\nfor (const auto value : values) {\n    std::cout << value << '\\n';\n}"},
+      {"title": "算法表达意图", "text": "std::transform、std::copy_if 和 std::accumulate 将常见算法命名化。先 include 对应头文件，保持输入输出和变换边界清晰。", "code": "std::sort(values.begin(), values.end());\nconst auto total = std::accumulate(values.begin(), values.end(), 0);"}
+    ],
+    "tip": "迭代器失效是 C++ 常见风险。vector 扩容可能让指向元素的指针、引用和迭代器失效。",
+    "mode": "run", "input": "",
+    "example": "#include <iostream>\n#include <numeric>\n#include <vector>\n\nint main() {\n    const std::vector<int> values{1, 2, 3, 4};\n    const auto total = std::accumulate(values.begin(), values.end(), 0);\n    std::cout << \"total: \" << total << '\\n';\n}\n",
+    "expected": "total: 10",
+    "challenge": {"description": "计算 values 中偶数的平方和，输出 even squares: 20。", "hint": "遍历 vector，偶数判断用 value % 2 == 0，累加 value * value。", "code": "#include <iostream>\n#include <vector>\n\nint main() {\n    const std::vector<int> values{1, 2, 3, 4};\n    int total = 0;\n    std::cout << \"even squares: \" << total << '\\n';\n}\n", "expected": "even squares: 20", "solution": "#include <iostream>\n#include <vector>\n\nint main() {\n    const std::vector<int> values{1, 2, 3, 4}; int total = 0;\n    for (const auto value : values) { if (value % 2 == 0) total += value * value; }\n    std::cout << \"even squares: \" << total << '\\n';\n}\n"}
+  },
+  {
+    "id": "functions", "title": "函数与引用", "english": "State your ownership", "group": "抽象与设计", "minutes": 14,
+    "summary": "区分值、引用和指针，写出不隐藏所有权和修改语义的函数。",
+    "tags": ["reference", "const", "overload"],
+    "sections": [
+      {"title": "引用是已有对象的别名", "text": "T& 必须绑定到一个对象，T* 可以为空。const T& 适合高效只读传参，函数不会复制大型对象，也不会修改它。", "code": "void print(const std::string& value) {\n    std::cout << value << '\\n';\n}"},
+      {"title": "返回值要保持有效", "text": "不要返回局部变量的引用或指针。按值返回现代 C++ 通常会被移动或消除复制；只有引用到调用方仍然拥有的对象时才返回引用。", "code": "int& first(std::vector<int>& values) {\n    return values.at(0);\n}"}
+    ],
+    "tip": "`at` 会做边界检查并抛出异常；`operator[]` 更快但不检查。根据函数契约选择，而不是只追求少一个字符。",
+    "mode": "run", "input": "",
+    "example": "#include <iostream>\n\nvoid increment(int& value) {\n    value++;\n}\n\nint main() {\n    int count = 1;\n    increment(count);\n    std::cout << \"count: \" << count << '\\n';\n}\n",
+    "expected": "count: 2",
+    "challenge": {"description": "实现 swap，通过引用交换两个整数，输出 20 10。", "hint": "使用 int temporary，然后给 left 和 right 重新赋值。", "code": "#include <iostream>\n\nvoid swap_values(int& left, int& right) {\n}\n\nint main() {\n    int left = 10; int right = 20;\n    swap_values(left, right);\n    std::cout << left << ' ' << right << '\\n';\n}\n", "expected": "20 10", "solution": "#include <iostream>\n\nvoid swap_values(int& left, int& right) { int temporary = left; left = right; right = temporary; }\nint main() { int left = 10; int right = 20; swap_values(left, right); std::cout << left << ' ' << right << '\\n'; }\n"}
+  },
+  {
+    "id": "classes", "title": "类与 RAII", "english": "Let lifetime do the work", "group": "抽象与设计", "minutes": 16,
+    "summary": "用类封装不变量，理解构造函数和 RAII 如何让资源生命周期自动对齐。",
+    "tags": ["class", "constructor", "RAII"],
+    "sections": [
+      {"title": "构造一个有效对象", "text": "构造函数建立对象的不变量。private 隐藏表示，public 暴露行为。成员初始化列表在构造函数体执行前初始化字段。", "code": "class Counter {\npublic:\n    explicit Counter(int value) : value_(value) {}\n    void add(int amount) { value_ += amount; }\n    int value() const { return value_; }\nprivate:\n    int value_;\n};"},
+      {"title": "资源跟着对象走", "text": "RAII 让资源在构造时获得，在析构时释放。标准库的 vector、string、fstream 和智能指针都遵循这个思路，减少手写 cleanup 的路径。", "code": "{\n    std::ofstream file(\"report.txt\");\n    file << \"done\\n\";\n}\n// 作用域结束时 file 自动关闭"}
+    ],
+    "tip": "如果类型拥有资源，优先使用标准库资源句柄和 rule of zero；不要轻易手写析构、拷贝和移动函数。",
+    "mode": "run", "input": "",
+    "example": "#include <iostream>\n\nclass Counter {\npublic:\n    void add(int amount) { value_ += amount; }\n    int value() const { return value_; }\nprivate:\n    int value_ = 0;\n};\n\nint main() {\n    Counter counter;\n    counter.add(3);\n    std::cout << counter.value() << '\\n';\n}\n",
+    "expected": "3",
+    "challenge": {"description": "给 Counter 增加 reset 方法，将值恢复为 0，输出 0。", "hint": "在 public 区域增加 void reset() { value_ = 0; }，再在 main 中调用。", "code": "#include <iostream>\n\nclass Counter {\npublic:\n    void add(int amount) { value_ += amount; }\n    void reset() {}\n    int value() const { return value_; }\nprivate:\n    int value_ = 0;\n};\n\nint main() {\n    Counter counter; counter.add(3); counter.reset(); std::cout << counter.value() << '\\n';\n}\n", "expected": "0", "solution": "#include <iostream>\nclass Counter { public: void add(int amount) { value_ += amount; } void reset() { value_ = 0; } int value() const { return value_; } private: int value_ = 0; };\nint main() { Counter counter; counter.add(3); counter.reset(); std::cout << counter.value() << '\\n'; }\n"}
+  }
+]

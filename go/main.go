@@ -36,9 +36,10 @@ type application struct {
 }
 
 type codeRequest struct {
-	Code  string `json:"code"`
-	Input string `json:"input"`
-	Mode  string `json:"mode"`
+	Language string `json:"language"`
+	Code     string `json:"code"`
+	Input    string `json:"input"`
+	Mode     string `json:"mode"`
 }
 
 func main() {
@@ -49,10 +50,7 @@ func main() {
 	if *port < 1 || *port > 65535 || *runTimeout <= 0 || *buildTimeout <= 0 {
 		log.Fatal("port must be between 1 and 65535; timeouts must be positive")
 	}
-	goPath, err := exec.LookPath("go")
-	if err != nil {
-		log.Fatal("Go was not found in PATH. Install Go 1.22 or newer before starting the server.")
-	}
+	goPath, _ := exec.LookPath("go")
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
 		log.Fatal("cannot initialize local session: ", err)
@@ -71,7 +69,7 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 		MaxHeaderBytes:    16 * 1024,
 	}
-	log.Printf("Go workshop is ready: http://%s", server.Addr)
+	log.Printf("Language workshop is ready: http://%s", server.Addr)
 	log.Printf("Runs trusted local code with your user permissions. Press Ctrl+C to stop.")
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
@@ -117,11 +115,16 @@ func (app *application) routes() http.Handler {
 }
 
 func (app *application) config(response http.ResponseWriter, request *http.Request) {
+	reports := make([]environmentReport, 0, len(languageCatalog))
+	for _, language := range languageCatalog {
+		reports = append(reports, reportFor(app.runner.toolchains[language.ID]))
+	}
 	writeJSON(response, http.StatusOK, map[string]any{
-		"token": app.token, "goVersion": app.runner.version,
+		"token": app.token, "goVersion": app.runner.version, "defaultLanguage": "go",
 		"runTimeoutMs":   app.runner.runTimeout.Milliseconds(),
 		"buildTimeoutMs": app.runner.buildTimeout.Milliseconds(),
 		"maxCodeBytes":   maxCodeBytes, "maxInputBytes": maxInputBytes,
+		"languages": languageCatalog, "environments": reports,
 	})
 }
 
@@ -158,6 +161,13 @@ func readCode(response http.ResponseWriter, request *http.Request) (codeRequest,
 		writeError(response, http.StatusBadRequest, "请先输入 Go 代码。")
 		return payload, false
 	}
+	if payload.Language == "" {
+		payload.Language = "go"
+	}
+	if _, exists := languageByID(payload.Language); !exists {
+		writeError(response, http.StatusBadRequest, "不支持的语言。")
+		return payload, false
+	}
 	if len(payload.Code) > maxCodeBytes || len(payload.Input) > maxInputBytes {
 		writeError(response, http.StatusRequestEntityTooLarge, "代码不能超过 64 KiB，标准输入不能超过 16 KiB。")
 		return payload, false
@@ -175,6 +185,10 @@ func readCode(response http.ResponseWriter, request *http.Request) (codeRequest,
 func (app *application) run(response http.ResponseWriter, request *http.Request) {
 	payload, valid := readCode(response, request)
 	if !valid {
+		return
+	}
+	if err := app.runner.checkRequest(payload); err != nil {
+		writeError(response, http.StatusFailedDependency, err.Error())
 		return
 	}
 	select {
@@ -196,6 +210,18 @@ func (app *application) run(response http.ResponseWriter, request *http.Request)
 func (app *application) format(response http.ResponseWriter, request *http.Request) {
 	payload, valid := readCode(response, request)
 	if !valid {
+		return
+	}
+	if payload.Language == "" {
+		payload.Language = "go"
+	}
+	if payload.Language != "go" {
+		formatted, err := app.runner.format(request.Context(), payload)
+		if err != nil {
+			writeError(response, http.StatusUnprocessableEntity, err.Error())
+			return
+		}
+		writeJSON(response, http.StatusOK, map[string]string{"code": formatted})
 		return
 	}
 	formatted, err := format.Source([]byte(payload.Code))

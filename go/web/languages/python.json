@@ -1,0 +1,58 @@
+[
+  {
+    "id": "hello", "title": "从脚本开始", "english": "Make it readable", "group": "Python 基础", "minutes": 8,
+    "summary": "用最小的语法写出第一个脚本，理解缩进、对象和标准输出。",
+    "tags": ["print", "indentation", "object"],
+    "sections": [
+      {"title": "代码就是从上到下读的", "text": "Python 用缩进表达代码块，不需要大括号。缩进通常使用 4 个空格，并且同一代码块必须保持一致。变量名绑定到对象，动态类型并不意味着没有类型。", "code": "name = \"Ada\"\nif name:\n    print(f\"Hello, {name}!\")"},
+      {"title": "f-string 让输出贴近意图", "text": "f-string 在字符串前加 f，用花括号插入表达式。print 默认以空格分隔参数并在结尾换行；调试对象时，repr 或 !r 可以保留更明确的表示。", "code": "language = \"Python\"\nprint(f\"Learning {language} with intent.\")"}
+    ],
+    "tip": "Python 的空白是语法的一部分。编辑器中尽量开启显示空白，并统一使用空格，不要混用 Tab。",
+    "mode": "run", "input": "",
+    "example": "name = \"Ada\"\nprint(f\"Hello, {name}!\")\nprint(\"Make it readable.\")\n",
+    "expected": "Hello, Ada!\nMake it readable.",
+    "challenge": {"description": "让程序输出两行：Hello, Python! 和 Readable by design.。使用变量保存语言名。", "hint": "用 language = \"Python\"，再用 f-string 插入变量。", "code": "language = \"Go\"\nprint(f\"Hello, {language}!\")\n", "expected": "Hello, Python!\nReadable by design.", "solution": "language = \"Python\"\nprint(f\"Hello, {language}!\")\nprint(\"Readable by design.\")\n"}
+  },
+  {
+    "id": "collections", "title": "列表、字典与推导式", "english": "Shape your data", "group": "Python 基础", "minutes": 12,
+    "summary": "用 Python 的内置集合表达数据变换，练习过滤、映射和键值查找。",
+    "tags": ["list", "dict", "comprehension"],
+    "sections": [
+      {"title": "选择贴合问题的集合", "text": "list 保留顺序并允许重复，set 用于去重和成员判断，dict 用键查找值。for 循环可以直接遍历元素；需要索引时再使用 enumerate。", "code": "services = [\"api\", \"worker\"]\nhealth = {service: True for service in services}"},
+      {"title": "推导式是有名字的变换", "text": "列表推导式适合短小、线性的映射或过滤。若表达式包含多层条件或副作用，普通循环通常更容易读和调试。", "code": "ports = [80, 443, 8080]\nsecure = [port for port in ports if port == 443]"}
+    ],
+    "tip": "字典读取时用 get 提供默认值，可以避免无意的 KeyError；需要区分缺失与 None 时，再使用 in 或显式判断。",
+    "mode": "run", "input": "",
+    "example": "services = [\"api\", \"worker\", \"api\"]\nunique = list(dict.fromkeys(services))\nhealth = {service: True for service in unique}\nprint(unique)\nprint(health[\"api\"])\n",
+    "expected": "['api', 'worker']\nTrue",
+    "challenge": {"description": "将 numbers 中的偶数平方并按原顺序输出，预期为 [4, 16, 36]。", "hint": "在列表推导式中使用 number % 2 == 0 过滤，再写 number ** 2。", "code": "numbers = [1, 2, 3, 4, 5, 6]\nresult = numbers\nprint(result)\n", "expected": "[4, 16, 36]", "solution": "numbers = [1, 2, 3, 4, 5, 6]\nresult = [number ** 2 for number in numbers if number % 2 == 0]\nprint(result)\n"}
+  },
+  {
+    "id": "functions", "title": "函数与异常", "english": "Make failure explicit", "group": "工程习惯", "minutes": 14,
+    "summary": "用函数收拢意图，用异常区分可恢复的输入问题和真正的程序错误。",
+    "tags": ["def", "return", "try"],
+    "sections": [
+      {"title": "函数是可测试的边界", "text": "def 定义函数，参数从左到右绑定。返回多个值时实际返回一个 tuple。默认参数在函数定义时求值，默认值不要使用可变对象。", "code": "def clamp(value, low=0, high=100):\n    return max(low, min(value, high))"},
+      {"title": "只捕获你能处理的异常", "text": "try / except 捕获异常，else 只在没有异常时执行，finally 用于一定要清理的资源。不要用裸 except 吞掉 KeyboardInterrupt 或系统退出信号。", "code": "try:\n    count = int(raw)\nexcept ValueError:\n    count = 0"}
+    ],
+    "tip": "函数名和参数名就是给调用者看的契约。先写清楚输入、输出和错误条件，再决定是否需要异常。",
+    "mode": "run", "input": "",
+    "example": "def parse_port(raw):\n    try:\n        port = int(raw)\n    except ValueError:\n        return None\n    return port if 1 <= port <= 65535 else None\n\nprint(parse_port(\"8080\"))\nprint(parse_port(\"nope\"))\n",
+    "expected": "8080\nNone",
+    "challenge": {"description": "实现 safe_divide，除数为 0 时返回 None，否则返回除法结果，输出 5.0 和 None。", "hint": "使用 try / except ZeroDivisionError，或在计算前显式判断 denominator。", "code": "def safe_divide(numerator, denominator):\n    return numerator / denominator\n\nprint(safe_divide(10, 2))\nprint(safe_divide(10, 0))\n", "expected": "5.0\nNone", "solution": "def safe_divide(numerator, denominator):\n    if denominator == 0:\n        return None\n    return numerator / denominator\n\nprint(safe_divide(10, 2))\nprint(safe_divide(10, 0))\n"}
+  },
+  {
+    "id": "io", "title": "文件与 JSON", "english": "Talk to the outside world", "group": "工程习惯", "minutes": 16,
+    "summary": "使用上下文管理器安全地读写数据，把外部世界转换成可处理的对象。",
+    "tags": ["with", "json", "pathlib"],
+    "sections": [
+      {"title": "with 负责关闭资源", "text": "with open(...) as file 会在代码块结束时关闭文件，即使块内发生异常。pathlib.Path 提供跨平台的路径操作；不要手拼 Windows 和 Unix 的路径分隔符。", "code": "from pathlib import Path\n\npath = Path(\"config.txt\")\nwith path.open(encoding=\"utf-8\") as file:\n    text = file.read()"},
+      {"title": "JSON 是边界格式", "text": "json.loads 将字符串解析为 Python 对象，json.dumps 反向序列化。实际服务边界应校验字段和类型，不要把来自外部的 JSON 直接当作可信配置。", "code": "import json\n\npayload = json.loads('{\"ready\": true}')\nprint(payload[\"ready\"])"}
+    ],
+    "tip": "本地工作台用临时目录运行代码，练习中可以读写当前工作目录里的文件；不要依赖本机固定路径。",
+    "mode": "run", "input": "",
+    "example": "import json\n\nconfig = {\"service\": \"api\", \"port\": 8080}\nencoded = json.dumps(config, sort_keys=True)\ndecoded = json.loads(encoded)\nprint(decoded[\"service\"])\nprint(decoded[\"port\"] > 1024)\n",
+    "expected": "api\nTrue",
+    "challenge": {"description": "把 payload 编码成 JSON 并按 key 顺序输出，预期为 {\"ready\": true, \"version\": 2}。", "hint": "json.dumps(payload, sort_keys=True) 会排序键；用 separators 可以控制空格。", "code": "import json\n\npayload = {\"version\": 2, \"ready\": True}\nprint(payload)\n", "expected": "{\"ready\": true, \"version\": 2}", "solution": "import json\n\npayload = {\"version\": 2, \"ready\": True}\nprint(json.dumps(payload, sort_keys=True))\n"}
+  }
+]
